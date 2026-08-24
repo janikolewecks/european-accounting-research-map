@@ -237,9 +237,10 @@ tbody tr:last-child { border-bottom:0; }
   <!-- TRENDS -->
   <section class="panel on" id="p-trends" role="tabpanel">
     <p class="lead">How often each topic, method or data source appears across the
-      nine observed congress years. Pick up to five labels. No congress data exist
-      for 2019 to 2021. The dashed segment bridges that gap so a series can be
-      followed across it, without claiming a value was observed.</p>
+      observed congress years. Pick up to five labels. No congress data exist
+      for 2019 to 2021. Where both periods are on screen, a dashed segment
+      bridges that gap so a series can be followed across it, without claiming
+      a value was observed.</p>
     <div class="card">
       <div class="split">
         <div>
@@ -429,24 +430,35 @@ function tipAt(tip, host, x, y, html) {
 }
 
 /* ---------------- trends ---------------- */
+function periodLabel() {
+  return S.period === 'early' ? '2015\u20132018'
+       : S.period === 'late'  ? '2022\u20132026'
+       : 'all congress years';
+}
+
 function drawTrends() {
   const I = dimInfo(S.tdim), rows = slice();
   const sel = S.tsel.slice(0, MAXSEL);
-  const per = YEARS.map(y => {
-    const rs = rows.filter(r => r[0] === y);
-    return shares(rs, S.tdim);
-  });
+  // Only the congress years the period filter keeps. With one period selected
+  // the other block must not appear on the axis at all.
+  const yrs = YEARS.filter(y => S.period === 'all' || (S.period === 'early') === (y <= 2018));
+  const spans = yrs.some(y => y <= 2018) && yrs.some(y => y >= 2022);
+  const gapAt = spans ? yrs.findIndex(y => y >= 2022) : -1;
+  const per = yrs.map(y => shares(rows.filter(r => r[0] === y), S.tdim));
   const series = sel.map((idx, k) => ({
     idx, name: I.names[idx], color: cssv(SER[k]),
-    vals: per.map(p => S.tmode === 'share' ? p.pct[idx] : p.cnt[idx])
+    // A congress year with no eligible submission is missing, not zero. A
+    // small country would otherwise show a line dropping to the baseline.
+    vals: per.map(p => p.den === 0 ? null : (S.tmode === 'share' ? p.pct[idx] : p.cnt[idx]))
   }));
 
   const W = 764, H = 320, L = 46, R = 196, T = 12, B = 40;
   const pw = W - L - R, ph = H - T - B;
-  const xs = YEARS.map((y, i) => i + (y >= 2022 ? 0.55 : 0));
+  const xs = yrs.map((y, i) => i + (spans && y >= 2022 ? 0.55 : 0));
   const xmax = xs[xs.length - 1] || 1;
   const X = i => L + (xs[i] / xmax) * pw;
-  const maxv = niceMax(Math.max(0.001, ...series.flatMap(s => s.vals)));
+  const seen = series.flatMap(s => s.vals).filter(v => v !== null);
+  const maxv = niceMax(Math.max(0.001, ...(seen.length ? seen : [1])));
   const Y = v => T + ph - (v / maxv) * ph;
 
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img',
@@ -463,38 +475,53 @@ function drawTrends() {
   svg.appendChild(el('line', { x1: L, x2: L + pw, y1: T + ph, y2: T + ph,
     stroke: cssv('--axis'), 'stroke-width': 1 }));
 
-  const gx = (X(3) + X(4)) / 2;
-  svg.appendChild(el('line', { x1: gx, x2: gx, y1: T, y2: T + ph,
-    stroke: cssv('--axis'), 'stroke-width': 1, opacity: 0.35 }));
-  svg.appendChild(txt(gx, T + 11, 'no congress data 2019–21',
-    { 'text-anchor': 'middle', fill: cssv('--muted'), 'font-size': 10 }));
+  if (spans) {
+    const gx = (X(gapAt - 1) + X(gapAt)) / 2;
+    svg.appendChild(el('line', { x1: gx, x2: gx, y1: T, y2: T + ph,
+      stroke: cssv('--axis'), 'stroke-width': 1, opacity: 0.35 }));
+    svg.appendChild(txt(gx, T + 11, 'no congress data 2019\u201321',
+      { 'text-anchor': 'middle', fill: cssv('--muted'), 'font-size': 10 }));
+  }
 
-  YEARS.forEach((y, i) => svg.appendChild(txt(X(i), T + ph + 20, y,
+  yrs.forEach((y, i) => svg.appendChild(txt(X(i), T + ph + 20, y,
     { 'text-anchor': 'middle', fill: cssv('--muted'), 'font-size': 11,
       'font-family': 'IBM Plex Mono, monospace' })));
 
+  // Consecutive stretches of observed values, broken at the congress gap and
+  // wherever a year has no eligible submissions.
+  const runsOf = vals => {
+    const out = []; let cur = [];
+    vals.forEach((v, i) => {
+      if (i === gapAt && cur.length) { out.push(cur); cur = []; }
+      if (v === null) { if (cur.length) { out.push(cur); cur = []; } return; }
+      cur.push(i);
+    });
+    if (cur.length) out.push(cur);
+    return out;
+  };
+
   series.forEach(s => {
-    [[0, 3], [4, 8]].forEach(([a, b]) => {
-      const pts = [];
-      for (let i = a; i <= b && i < YEARS.length; i++) pts.push(`${X(i)},${Y(s.vals[i])}`);
-      if (pts.length > 1) svg.appendChild(el('polyline', { points: pts.join(' '),
+    runsOf(s.vals).forEach(run => {
+      if (run.length < 2) return;
+      svg.appendChild(el('polyline', {
+        points: run.map(i => `${X(i)},${Y(s.vals[i])}`).join(' '),
         fill: 'none', stroke: s.color, 'stroke-width': 2,
         'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
     });
-    // The 2019-2021 gap is bridged with a dashed, faded segment. The reader
-    // sees where the series continues without being shown a value that was
-    // never observed.
-    if (YEARS.length > 4) svg.appendChild(el('line', {
-      x1: X(3), y1: Y(s.vals[3]), x2: X(4), y2: Y(s.vals[4]),
-      stroke: s.color, 'stroke-width': 2, 'stroke-dasharray': '5 5',
-      'stroke-linecap': 'round', opacity: 0.38 }));
-    YEARS.forEach((y, i) => {
+    if (spans && s.vals[gapAt - 1] !== null && s.vals[gapAt] !== null)
+      svg.appendChild(el('line', {
+        x1: X(gapAt - 1), y1: Y(s.vals[gapAt - 1]), x2: X(gapAt), y2: Y(s.vals[gapAt]),
+        stroke: s.color, 'stroke-width': 2, 'stroke-dasharray': '5 5',
+        'stroke-linecap': 'round', opacity: 0.38 }));
+    yrs.forEach((y, i) => {
+      if (s.vals[i] === null) return;
       svg.appendChild(el('circle', { cx: X(i), cy: Y(s.vals[i]), r: 3.6,
         fill: s.color, stroke: cssv('--surface'), 'stroke-width': 2 }));
     });
-    const last = YEARS.length - 1;
-    svg.appendChild(txt(X(last) + 10, Y(s.vals[last]) + 4,
-      s.name.length > 34 ? s.name.slice(0, 33) + '…' : s.name,
+    let last = -1;
+    s.vals.forEach((v, i) => { if (v !== null) last = i; });
+    if (last >= 0) svg.appendChild(txt(X(last) + 10, Y(s.vals[last]) + 4,
+      s.name.length > 34 ? s.name.slice(0, 33) + '\u2026' : s.name,
       { fill: cssv('--ink-2'), 'font-size': 11.5 }));
   });
 
@@ -507,13 +534,14 @@ function drawTrends() {
     const b = svg.getBoundingClientRect();
     const px = (ev.clientX - b.left) / b.width * W;
     let bi = 0, bd = 1e9;
-    YEARS.forEach((y, i) => { const d = Math.abs(X(i) - px); if (d < bd) { bd = d; bi = i; } });
+    yrs.forEach((y, i) => { const d = Math.abs(X(i) - px); if (d < bd) { bd = d; bi = i; } });
     cross.setAttribute('x1', X(bi)); cross.setAttribute('x2', X(bi)); cross.setAttribute('opacity', 1);
     const rowsHtml = series.map(s => `<div class="tr"><i style="background:${s.color}"></i>${s.name}<b class="mono">${
-      S.tmode === 'share' ? fmt(s.vals[bi]) + '%' : s.vals[bi]}</b></div>`).join('');
+      s.vals[bi] === null ? 'no data' : (S.tmode === 'share' ? fmt(s.vals[bi]) + '%' : s.vals[bi])
+    }</b></div>`).join('');
     const hb = host.getBoundingClientRect();
     tipAt(tip, host, ev.clientX - hb.left, ev.clientY - hb.top,
-      `<div class="th mono">${YEARS[bi]}</div>${rowsHtml}`);
+      `<div class="th mono">${yrs[bi]}</div>${rowsHtml}`);
   });
   hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; cross.setAttribute('opacity', 0); });
 
@@ -525,11 +553,12 @@ function drawTrends() {
   document.getElementById('t-title').textContent =
     (S.tmode === 'share' ? 'Share of submissions carrying the label' : 'Number of submissions');
   document.getElementById('t-sub').textContent =
-    `${groupLabel()} · ${I.label}s · denominator is submissions with a ${I.label} label`;
+    `${groupLabel()} \u00b7 ${periodLabel()} \u00b7 ${I.label}s \u00b7 denominator is submissions with a ${I.label} label`;
 
-  const th = ['Label', ...YEARS].map(h => `<th>${h}</th>`).join('');
+  const th = ['Label', ...yrs].map(h => `<th>${h}</th>`).join('');
   const tb = series.map(s => `<tr><td>${s.name}</td>${s.vals.map(v =>
-    `<td class="mono">${S.tmode === 'share' ? fmt(v) : v}</td>`).join('')}</tr>`).join('');
+    `<td class="mono">${v === null ? '\u00b7' : (S.tmode === 'share' ? fmt(v) : v)}</td>`
+    ).join('')}</tr>`).join('');
   document.getElementById('t-table').innerHTML =
     `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
 }
@@ -540,6 +569,18 @@ function drawProfiles() {
   const ref = shares(D.rows.filter(r => r[1] >= 0 && D.countries[r[1]].eu &&
     (S.period === 'all' || (S.period === 'early') === EARLY(r[0]))), S.pdim);
   const grp = shares(slice(S.punit), S.pdim);
+  const host0 = document.getElementById('pr-plot');
+  // With no submissions in the slice every share is zero, which would draw as
+  // "below the average on everything". Say so instead of charting nothing.
+  if (grp.den === 0) {
+    host0.querySelectorAll('svg').forEach(n => n.remove());
+    document.getElementById('pr-title').textContent =
+      `${groupLabel(S.punit)} against the European average`;
+    document.getElementById('pr-sub').textContent =
+      `${periodLabel()} · no submissions with a ${I.label} label in this selection`;
+    document.getElementById('pr-table').innerHTML = '';
+    return;
+  }
   const rows = I.names.map((n, i) => ({ name: n, dev: grp.pct[i] - ref.pct[i],
     g: grp.pct[i], r: ref.pct[i] }))
     .sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev)).slice(0, 12);
@@ -591,7 +632,8 @@ function drawProfiles() {
   document.getElementById('pr-title').textContent =
     `${groupLabel(S.punit)} against the European average`;
   document.getElementById('pr-sub').textContent =
-    `${I.label}s · percentage points · ${grp.den.toLocaleString('en-US')} submissions in the group, ` +
+    `${I.label}s · ${periodLabel()} · percentage points · ` +
+    `${grp.den.toLocaleString('en-US')} submissions in the group, ` +
     `${ref.den.toLocaleString('en-US')} in the European reference`;
 
   document.getElementById('pr-table').innerHTML =
@@ -603,8 +645,20 @@ function drawProfiles() {
 }
 
 /* ---------------- combinations ---------------- */
+// The two axes must differ. Rather than silently correcting the state behind
+// the reader's back, move the axis the reader did not just touch and write
+// both menus back, so the controls always agree with the chart.
+function syncCross(changed) {
+  if (S.xrow === S.xcol) {
+    const free = ['topics', 'methods', 'sources'].find(d => d !== S.xrow);
+    if (changed === 'col') S.xrow = free; else S.xcol = free;
+  }
+  document.getElementById('x-row').value = S.xrow;
+  document.getElementById('x-col').value = S.xcol;
+}
+
 function drawCross() {
-  if (S.xrow === S.xcol) S.xcol = S.xrow === 'methods' ? 'topics' : 'methods';
+  syncCross();
   const A = dimInfo(S.xrow), B = dimInfo(S.xcol), rows = slice();
   const rn = A.names, cn = B.names;
   const M = rn.map((_, i) => {
@@ -612,7 +666,9 @@ function drawCross() {
     const out = cn.map((__, j) => rs.length ? rs.filter(r => B.has(r, j)).length / rs.length * 100 : 0);
     return { vals: out, n: rs.length };
   });
-  const order = rn.map((n, i) => i).sort((a, b) => M[b].n - M[a].n);
+  // a label with no submissions in the current slice has nothing to show
+  const order = rn.map((n, i) => i).filter(i => M[i].n > 0)
+    .sort((a, b) => M[b].n - M[a].n);
   const maxv = Math.max(1, ...M.flatMap(m => m.vals));
   const Q = ['--q1','--q2','--q3','--q4','--q5','--q6','--q7'];
   const bucket = v => Math.min(6, Math.floor(v / maxv * 7 * 0.999));
@@ -669,7 +725,8 @@ function drawCross() {
   document.getElementById('x-title').textContent =
     `${A.label[0].toUpperCase() + A.label.slice(1)}s by ${B.label}`;
   document.getElementById('x-sub').textContent =
-    `${groupLabel()} · each row is the share of that ${A.label}'s submissions carrying the column label · n is the row base · rows ordered by size`;
+    `${groupLabel()} · ${periodLabel()} · each row is the share of that ${A.label}'s ` +
+    `submissions carrying the column label · n is the row base · rows ordered by size`;
 
   document.getElementById('x-table').innerHTML =
     `<table><thead><tr><th>${A.label}</th><th>n</th>` + cn.map(n => `<th>${n}</th>`).join('') +
@@ -758,8 +815,10 @@ document.getElementById('t-dim').addEventListener('change', e => {
   S.tdim = e.target.value; S.tsel = []; buildPicker(); drawTrends(); });
 document.getElementById('p-dim').addEventListener('change', e => {
   S.pdim = e.target.value; drawProfiles(); });
-document.getElementById('x-row').addEventListener('change', e => { S.xrow = e.target.value; drawCross(); });
-document.getElementById('x-col').addEventListener('change', e => { S.xcol = e.target.value; drawCross(); });
+document.getElementById('x-row').addEventListener('change', e => {
+  S.xrow = e.target.value; syncCross('row'); drawCross(); });
+document.getElementById('x-col').addEventListener('change', e => {
+  S.xcol = e.target.value; syncCross('col'); drawCross(); });
 
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(x =>

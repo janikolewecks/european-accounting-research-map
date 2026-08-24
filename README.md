@@ -100,6 +100,41 @@ place: the heatmap prints the base `n` of every row so small cells cannot be
 over-read, and the page states that the classifications are ours rather than
 the authors' own.
 
+## Why the data file is public, and what the alternatives cost
+
+Anything a browser draws, the browser first receives. A dashboard that runs
+in the visitor's browser cannot hide its own data. The only real choices are
+what the file contains and whether the computation happens on a server.
+
+**Shipping only pre-computed aggregates was measured, not guessed.** The full
+cube the dashboard needs for its 162 filter states (2 populations x 27 groups
+x 3 periods, trends plus all six ordered dimension pairs) is **142 KB
+delivered, against 41 KB for the paper rows**. Aggregates are 3.5 times
+larger here, because 7,443 rows of six small integers are more compact than
+every cross-tabulation of them. They would also freeze the interface: a new
+view or a new filter combination would need a new export. So that route
+costs bandwidth and flexibility and buys very little.
+
+**A server-side API would genuinely change the exposure**, since the browser
+would only ever receive the aggregate it asked for. The price is a backend
+that must be paid for, kept patched and kept alive for as long as the map is
+cited. It also ends the property that makes this thing durable: a static file
+set that any host can serve, forever, for nothing.
+
+**Obfuscating the file is not protection.** Anyone with the browser's
+developer tools has it in under a minute. Building it would only mislead us
+about our own exposure.
+
+What the file does *not* contain is the part that matters: no names, no
+titles, no abstracts, no affiliations, no institution-level flags. It is a
+bibliometric extract of a public conference programme, which is the kind of
+dataset open science expects to be shared.
+
+The real lever is timing rather than technology. If the concern is being
+scooped, the answer is to publish the map when the paper is out or at least
+on a preprint server with a DOI, and to attach a licence that requires
+citation.
+
 ## Design audit
 
 The first build carried a recognisable machine-generated signature. It was

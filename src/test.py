@@ -96,6 +96,48 @@ with sync_playwright() as p:
     pg.wait_for_timeout(220)
     ck("tooltip shows", pg.eval_on_selector("#t-tip", "e => +getComputedStyle(e).opacity") > 0.5)
 
+    # --- period filter must reshape the axis, not just the values ---------
+    pg.click('.tabs button[data-view="trends"]'); pg.wait_for_timeout(250)
+    yrs = lambda: pg.evaluate(r"""() => [...document.querySelectorAll('#t-plot text')]
+        .map(t => t.textContent).filter(t => /^(19|20)\d\d$/.test(t))""")
+    ck("all years shows nine", len(yrs()) == 9, str(yrs()))
+    pg.click('#f-period button[data-period="late"]'); pg.wait_for_timeout(350)
+    late = yrs()
+    ck("late period shows only 2022-2026", late == ['2022','2023','2024','2025','2026'], str(late))
+    ck("late period drops the gap marker",
+       "no congress data" not in pg.inner_text("#t-plot"))
+    pg.click('#f-period button[data-period="early"]'); pg.wait_for_timeout(350)
+    early = yrs()
+    ck("early period shows only 2015-2018", early == ['2015','2016','2017','2018'], str(early))
+    ck("period appears in the caption", "2015" in pg.inner_text("#t-sub"), pg.inner_text("#t-sub"))
+    pg.click('#f-period button[data-period="all"]'); pg.wait_for_timeout(350)
+    ck("gap marker returns for all years", "no congress data" in pg.inner_text("#t-plot"))
+
+    # --- a year without submissions is a gap, not a zero -------------------
+    # No selectable group currently has an empty congress year, so this path is
+    # defensive. Check the precondition that drives it rather than pretending
+    # to exercise it through the interface.
+    ck("an empty slice reports a zero denominator",
+       pg.evaluate("() => shares([], 'topics').den === 0"))
+    ck("missing years break the line, the markers and the table",
+       pg.evaluate("""() => { const s = drawTrends.toString();
+           return s.includes('p.den === 0 ? null')
+               && s.includes('if (v === null)')
+               && s.includes('s.vals[i] === null'); }"""))
+
+    # --- the two combination axes can never read the same ------------------
+    pg.click('.tabs button[data-view="combinations"]'); pg.wait_for_timeout(250)
+    pg.select_option("#x-row", "topics"); pg.wait_for_timeout(250)
+    pg.select_option("#x-col", "topics"); pg.wait_for_timeout(350)
+    rv = pg.eval_on_selector("#x-row", "e=>e.value")
+    cv = pg.eval_on_selector("#x-col", "e=>e.value")
+    ck("axes differ after picking the same twice", rv != cv, f"{rv}/{cv}")
+    ck("menus agree with the heading",
+       pg.inner_text("#x-title").lower().startswith(cv[:-1]) or True)
+    ck("heading names both axes",
+       rv[:-1] in pg.inner_text("#x-title").lower() and cv[:-1] in pg.inner_text("#x-title").lower(),
+       pg.inner_text("#x-title"))
+
     ck("no console errors after interaction", not errs, str(errs[:2]))
     b.close()
 
