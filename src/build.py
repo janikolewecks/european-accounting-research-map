@@ -11,6 +11,7 @@ Outputs
 GitHub Pages can serve a site straight from the docs/ folder of the default
 branch, which is why the hosted build lands there.
 """
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -91,3 +92,16 @@ hosted = HEAD + head_link + "</head>\n<body>\n" + body + "\n</body>\n</html>\n"
 print(f"build/dashboard.html  {len(single)/1024:>5.0f} KB   (artifact fragment)")
 print(f"docs/index.html       {len(hosted)/1024:>5.0f} KB   (full document)")
 print(f"docs/data.js          {len(raw)/1024:>5.0f} KB")
+
+# The privacy guarantee is a gate, not a promise in the readme. If anything
+# personal or institutional ever reaches a published file, the build removes
+# the hosted output rather than leaving a leaking site on disk.
+print()
+import subprocess
+audit = subprocess.run([sys.executable, str(ROOT / "src" / "audit_privacy.py")],
+                       capture_output=True, text=True)
+print(audit.stdout.strip())
+if audit.returncode != 0:
+    for f in (docs / "index.html", docs / "data.js", ROOT / "build" / "dashboard.html"):
+        f.unlink(missing_ok=True)
+    sys.exit("PRIVACY AUDIT FAILED - hosted files deleted, nothing publishable was written.")

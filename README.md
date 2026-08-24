@@ -82,23 +82,47 @@ but shared links unfurl correctly only when it matches.
 - Note that publishing is effectively one-way: once the data file is public
   and indexed, taking it down does not un-publish it.
 
-## What the data contains
+## What the data contains, and how that is enforced
 
 Per submission: congress year, primary-author country, topic labels, method
-labels, data source, evidence country. Nothing else.
+labels, data source, evidence country. Six integers. Nothing else.
 
-Deliberately excluded: author names, paper titles, abstracts, affiliation
-strings, and all institution-level information including the WRDS
-membership flag. Institution level was excluded on purpose. A department
-with a handful of submissions is effectively an identifiable person, and the
-WRDS match is model-based with known residual errors, so publishing
-institution claims would carry risk without informing the reader.
+Deliberately excluded: author names, co-author records, paper titles,
+abstracts, affiliation strings, model reasoning text, and all
+institution-level information including the WRDS membership flag.
+Institution level was excluded on purpose. A department with a handful of
+submissions is effectively an identifiable person, and the WRDS match is
+model-based with known residual errors, so publishing institution claims
+would carry risk without informing the reader.
 
-The congress programmes are public, so a determined reader could in
-principle map a rare combination back to a paper. Two mitigations are in
-place: the heatmap prints the base `n` of every row so small cells cannot be
-over-read, and the page states that the classifications are ours rather than
-the authors' own.
+### The guarantee is a gate, not a promise
+
+`src/audit_privacy.py` checks every file that reaches a visitor
+(`data/dashboard_data.json`, `docs/data.js`, `docs/index.html`,
+`build/dashboard.html`) against the source corpus:
+
+| Check | What it proves | Scope of the last run |
+|---|---|---|
+| A structure | every data row is six integers, no free text anywhere | 7,443 rows |
+| B whitelist | every string comes from the fixed vocabulary or the country list | 236 distinct strings |
+| C author names | no primary-author name occurs in any published file | 5,489 names |
+| D affiliations | no affiliation string occurs | 2,669 affiliations |
+| D co-authors | no co-author record occurs | 5,957 records |
+| E titles | no submission title occurs | 7,458 titles |
+| F free text | no abstract or model-reasoning text occurs | 7,463 abstracts, 3 reasoning fields |
+| G contact data | no e-mail, ORCID or unexpected outbound host | font service and SVG namespace only |
+
+`build.py` runs the audit after writing the files and **deletes the hosted
+output if any check fails**, so a leaking site cannot sit on disk waiting to
+be pushed. The gate is itself tested: injecting a real author name into the
+data makes the build fail and remove `docs/index.html` and `docs/data.js`.
+
+The congress programmes are public, so a determined reader could in principle
+match a rare combination of labels back to a paper. That is inherent to any
+bibliometric dataset of a public programme. Two mitigations are in place: the
+heatmap prints the base `n` of every row so small cells cannot be over-read,
+and the page states that the classifications are ours rather than the
+authors' own.
 
 ## Why the data file is public, and what the alternatives cost
 
