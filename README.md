@@ -48,19 +48,19 @@ Everything it needs is in `docs/` (about 390 KB including the preview image).
    be public anyway.
 2. From this folder:
 
-       git remote add origin https://github.com/<user>/european-accounting-research-map.git
+       git remote add origin https://github.com/janikolewecks/european-accounting-research-map.git
        git branch -M main
        git push -u origin main
 
 3. In the repository, **Settings > Pages**, set Source to *Deploy from a
    branch*, branch `main`, folder `/docs`, and save.
 4. After a minute the site is live at
-   `https://<user>.github.io/european-accounting-research-map/`.
+   `https://janikolewecks.github.io/european-accounting-research-map/`.
 
-**If the user name or repository name differs**, change `SITE_URL` at the top
-of `src/build.py` and rerun `python src/build.py`. That constant only feeds
-the canonical link and the social-card tags, so the page works either way,
-but shared links unfurl correctly only when it matches.
+The address is set in `src/config.py` (`GH_USER`, `GH_REPO`, `DOMAIN`) and
+everything derives from it: the canonical link, the social-card tags, the
+`CNAME` file and the host allowlist of the privacy audit. Change it there and
+rerun `python src/build.py`.
 
 ### A custom domain
 
@@ -76,7 +76,7 @@ yours while the hosting stays free and maintenance-free.
    `185.199.108.153`, `185.199.109.153`, `185.199.110.153`,
    `185.199.111.153`, and four **AAAA** records to `2606:50c0:8000::153`,
    `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`.
-   For `www`, one **CNAME** record to `<user>.github.io`.
+   For `www`, one **CNAME** record to `janikolewecks.github.io`.
 3. Commit and push, then enter the domain under **Settings > Pages**. Once
    the DNS check passes, tick **Enforce HTTPS**. The certificate can take up
    to 24 hours.

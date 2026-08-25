@@ -8,7 +8,7 @@ GitHub Pages reads, and the list of hosts the privacy audit tolerates.
 """
 
 DOMAIN = ""
-GH_USER = "jwecks"
+GH_USER = "janikolewecks"
 GH_REPO = "european-accounting-research-map"
 
 SITE_URL = (f"https://{DOMAIN}/" if DOMAIN
