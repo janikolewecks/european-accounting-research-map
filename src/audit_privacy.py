@@ -117,8 +117,9 @@ def main():
     # ---- G contact data --------------------------------------------------
     # Hosts the page is meant to reach: the font service and the SVG namespace,
     # plus our own canonical address. Anything else would be an outbound leak.
+    from config import SITE_HOST
     ALLOWED_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com",
-                     "www.w3.org", "jwecks.github.io")
+                     "www.w3.org", SITE_HOST)
     email = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
     url = re.compile(r"https?://([A-Za-z0-9.-]+)")
     leaks = []

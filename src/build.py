@@ -16,7 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "dashboard_data.json"
-SITE_URL = "https://jwecks.github.io/european-accounting-research-map/"
+
+from config import DOMAIN, SITE_URL  # noqa: E402
 
 TITLE = "European Accounting Research Map"
 DESC = ("What European accounting researchers study, how they study it and "
@@ -89,9 +90,18 @@ hosted = HEAD + head_link + "</head>\n<body>\n" + body + "\n</body>\n</html>\n"
 (docs / "data.js").write_text("window.__EAA_DATA__=" + raw + ";", encoding="utf-8", newline="\n")
 (docs / ".nojekyll").write_text("", encoding="utf-8")
 
+# GitHub Pages reads the custom domain from this file, so it must be part of
+# the deployed folder rather than a setting someone has to remember.
+cname = docs / "CNAME"
+if DOMAIN:
+    cname.write_text(DOMAIN + chr(10), encoding="utf-8")
+else:
+    cname.unlink(missing_ok=True)
+
 print(f"build/dashboard.html  {len(single)/1024:>5.0f} KB   (artifact fragment)")
 print(f"docs/index.html       {len(hosted)/1024:>5.0f} KB   (full document)")
 print(f"docs/data.js          {len(raw)/1024:>5.0f} KB")
+print(f"public address        {SITE_URL}")
 
 # The privacy guarantee is a gate, not a promise in the readme. If anything
 # personal or institutional ever reaches a published file, the build removes

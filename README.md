@@ -62,14 +62,35 @@ of `src/build.py` and rerun `python src/build.py`. That constant only feeds
 the canonical link and the social-card tags, so the page works either way,
 but shared links unfurl correctly only when it matches.
 
-### Alternatives
+### A custom domain
+
+Buy the domain at a registrar, keep the files on GitHub Pages, point the
+domain at Pages. Pages issues a free certificate for it, so the address is
+yours while the hosting stays free and maintenance-free.
+
+1. Set `DOMAIN` in `src/config.py` and run `python src/build.py`. That writes
+   `docs/CNAME` and rewrites the canonical link and the social-card URLs.
+   The privacy audit follows the same constant, so the new host is tolerated
+   automatically.
+2. At the registrar, for the bare domain create four **A** records to
+   `185.199.108.153`, `185.199.109.153`, `185.199.110.153`,
+   `185.199.111.153`, and four **AAAA** records to `2606:50c0:8000::153`,
+   `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`.
+   For `www`, one **CNAME** record to `<user>.github.io`.
+3. Commit and push, then enter the domain under **Settings > Pages**. Once
+   the DNS check passes, tick **Enforce HTTPS**. The certificate can take up
+   to 24 hours.
+
+Register with auto-renew on and WHOIS privacy enabled, otherwise the
+registrant's home address becomes public. A research artifact that dies
+because a domain lapsed is the most common way these things disappear.
+
+### Other hosts
 
 - **Netlify or Cloudflare Pages** — drag the `docs/` folder onto the
   dashboard. No git needed, custom domain in a few clicks.
 - **A university server** — copy `docs/` anywhere that serves static files.
-  Works, but it ties the map to one person's institutional account.
-- **Custom domain** — add a `CNAME` file in `docs/` containing the domain and
-  point a DNS CNAME record at the Pages host.
+  Works, but ties the map to one person's institutional account.
 - **Zenodo** — archive each yearly version for a citable DOI. Worth doing if
   the map is cited alongside the paper.
 
