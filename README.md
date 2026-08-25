@@ -19,7 +19,7 @@ profiles, and cross-tabulations.
               build.py               splices both into the two output shapes
               audit_privacy.py       the gate build.py runs before publishing
               config.py              the site address, used by build and audit
-              test.py                53 functional checks (Playwright)
+              test.py                59 functional checks (Playwright)
               shot.py                screenshots, light and dark, desktop and mobile
               vendor/                cached Natural Earth source, not committed
     docs/     index.html, data.js,   >>> this is what GitHub Pages serves <<<
@@ -36,7 +36,7 @@ that touches it.
 
     python src/export_data.py     # re-reads the corpus, rewrites data/
     python src/build.py           # rebuilds docs/ and build/, runs the privacy gate
-    python src/test.py            # 53 checks should pass
+    python src/test.py            # 59 checks should pass
 
 The map outlines change only if the country list does:
 
@@ -260,6 +260,14 @@ the other thirty; shares run linear. The legend prints the actual break
 values in both cases, so the scale is never something the reader has to
 infer. A share on fewer than ten submissions is hatched rather than coloured:
 below that base a percentage says more about the base than about the country.
+
+**The data file is requested with its content hash.** The first deployment
+of the map paired a fresh page with a browser's cached copy of the previous
+`data.js`. The outlines it expected were simply absent, the map threw, and
+because two more views were drawn after it, three tabs went blank at once.
+The page now asks for `data.js?v=<hash>`, so a new page can never receive an
+old payload, and each view is drawn independently: a view that fails says so
+in its own panel and leaves the others standing.
 
 **Every chart has a table view.** Colour is never the only route to a value.
 The heatmap also prints the row base, deviations are labelled at the bar

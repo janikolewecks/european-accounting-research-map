@@ -45,7 +45,7 @@ Periodenfilter greift; mobil kein Querscroll.
     python src/export_data.py   # liest den Korpus, schreibt data/
     python src/build_geo.py     # nur noetig, wenn sich die Laenderliste aendert
     python src/build.py         # baut docs/ und build/, faehrt die Pruefung
-    python src/test.py          # 53 Funktionstests (Playwright)
+    python src/test.py          # 59 Funktionstests (Playwright)
     python src/shot.py          # Screenshots hell/dunkel/mobil
     git add -A && git commit -m "..." && git push     # Pages deployt selbst
 
@@ -85,7 +85,13 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
    enthaelt den amtlichen Volltext). Als Rechteinhaber steht dort bisher nur
    Janik Ole Wecks &#8212; **vor Veroeffentlichung klaeren, ob die Koautoren
    dazugehoeren.**
-8. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
+8. **`data.js` wird mit Inhalts-Hash angefordert** (`data.js?v=...`), und
+   jede Ansicht wird einzeln gezeichnet (`draw()` in der Seite). Grund: nach
+   dem ersten Karten-Deploy paarte ein Browser die neue Seite mit der alten
+   gecachten Datendatei, `GEO` fehlte, `drawMap` warf &#8212; und weil Profile
+   und Kombinationen danach gezeichnet wurden, blieben **drei** Reiter leer.
+   Beides nicht zurueckbauen. Bei Fehlern zuerst hart neu laden (Strg+F5).
+9. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
    Dateien gegen 5.489 Autorennamen, 2.669 Affiliationen, 5.957
    Ko-Autoren-Eintraege, 7.458 Titel, Abstracts und vier LLM-Freitextfelder.
    `build.py` **loescht die Auslieferungsdateien**, wenn etwas durchrutscht.

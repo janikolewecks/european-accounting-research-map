@@ -221,24 +221,30 @@ tbody tr:last-child { border-bottom:0; }
   margin:var(--sp3) 0 0; max-width:76ch; }
 .fnote { color:var(--muted); }
 
-/* closing notes: definitions the reader should not have to guess */
-.notes { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr));
-  gap:var(--sp4) var(--sp6); border-top:1px solid var(--axis);
-  padding-top:var(--sp4); margin-top:var(--sp5); }
-.notes h3, .famblock h3 {
-  font-family:var(--serif); font-weight:500; font-size:16px;
-  margin:0 0 var(--sp2); color:var(--ink); }
-.notes p, .famblock p { font-size:12.5px; line-height:1.65; color:var(--ink-2);
-  margin:0; max-width:62ch; }
-.famblock { border-top:1px solid var(--axis); padding-top:var(--sp4);
-  margin-top:var(--sp4); }
-.fams { list-style:none; margin:var(--sp3) 0 0; padding:0; font-size:12.5px; }
+/* closing notes: available, not in the way. Collapsed by default so the page
+   is charts first and prose on request. */
+.notes { border-top:1px solid var(--axis); margin:var(--sp5) 0 var(--sp6); }
+.notes details { border-bottom:1px solid var(--grid); }
+.notes summary {
+  font-family:var(--serif); font-size:15.5px; color:var(--ink);
+  padding:13px 0; cursor:pointer; list-style:none;
+  display:flex; gap:11px; align-items:baseline;
+}
+.notes summary::-webkit-details-marker { display:none; }
+.notes summary::before { content:"+"; font-family:var(--mono); font-size:13px; color:var(--muted); }
+.notes details[open] summary::before { content:"2"; }
+.notes summary:hover { color:var(--accent); }
+.notes p {
+  font-size:12.5px; line-height:1.65; color:var(--ink-2);
+  margin:0 0 var(--sp3) 22px; max-width:68ch;
+}
+.notes a { color:var(--accent); text-underline-offset:2px; }
+.fams { list-style:none; margin:0 0 var(--sp4) 22px; padding:0; font-size:12.5px; }
 .fams li { display:grid; grid-template-columns:158px 1fr; gap:var(--sp3);
   padding:6px 0; border-top:1px solid var(--grid); color:var(--ink-2); }
 .fams b { font-weight:500; color:var(--ink); display:flex; align-items:center; gap:8px; }
 .fams i { width:9px; height:9px; flex:none; }
 @media (max-width:560px) { .fams li { grid-template-columns:1fr; gap:var(--sp1); } }
-.foot a { color:var(--accent); text-underline-offset:2px; }
 
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
@@ -297,10 +303,8 @@ tbody tr:last-child { border-bottom:0; }
   <!-- TRENDS -->
   <section class="panel on" id="p-trends" role="tabpanel">
     <p class="lead">How often each topic, method or data source appears, congress
-      year by congress year. Pick up to five labels. Comparable records are not
-      available for 2019 to 2021; where both periods are on screen, a dashed
-      segment bridges the gap so a series can be followed across it, and marks
-      that nothing was observed in between.</p>
+      year by congress year. No comparable records exist for 2019 to 2021; the
+      dashed segment bridges that gap without claiming a value.</p>
     <div class="card">
       <div class="split">
         <div>
@@ -336,11 +340,9 @@ tbody tr:last-child { border-bottom:0; }
 
   <!-- MAP -->
   <section class="panel" id="p-map" role="tabpanel">
-    <p class="lead">Two different geographies. One is where research is written:
-      the country of the primary author&#8217;s affiliation. The other is where its
-      evidence comes from: the country a paper actually examines. About half the
-      papers name no single country &#8212; analytical work and multi-country studies
-      among them &#8212; and cannot appear on the evidence map.</p>
+    <p class="lead">Where research is written, and where its evidence comes from.
+      About half the papers name no single country and cannot appear on the
+      evidence map.</p>
     <div class="card">
       <div class="split">
         <div>
@@ -390,8 +392,8 @@ tbody tr:last-child { border-bottom:0; }
   <!-- PROFILES -->
   <section class="panel" id="p-profiles" role="tabpanel">
     <p class="lead">Where one country or accounting family departs from the
-      European average. Bars are percentage-point differences: to the right the
-      group does more of it than Europe as a whole, to the left less.</p>
+      European average. To the right the group does more of it than Europe as a
+      whole, to the left less.</p>
     <div class="card">
       <div class="split">
         <div>
@@ -424,8 +426,8 @@ tbody tr:last-child { border-bottom:0; }
   <!-- COMBINATIONS -->
   <section class="panel" id="p-combinations" role="tabpanel">
     <p class="lead">Which methods and which data sources go with which topics.
-      Read a row across to see how one topic is studied. Each cell is the share of
-      that row's submissions that also carry the column label.</p>
+      Each cell is the share of that row's submissions that also carry the column
+      label.</p>
     <div class="card">
       <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px">
         <div class="fld">
@@ -454,61 +456,58 @@ tbody tr:last-child { border-bottom:0; }
   </section>
 
   <div class="notes">
-    <div>
-      <h3>Where the data come from</h3>
-      <p>The corpus is the papers accepted for presentation at the Annual
-        Congress of the European Accounting Association in nine congress years,
-        2015 to 2018 and 2022 to 2026. Comparable records are not available for
-        2019 to 2021, so those years are absent rather than empty. The unit is
-        one accepted paper with a usable abstract; papers that were submitted
-        but not accepted are not part of it. Eighty-eight papers appear at two
-        congresses under the same title and primary author and are counted once,
-        at their first appearance. A paper&#8217;s country is the country of its
-        primary author&#8217;s affiliation.</p>
-    </div>
-    <div>
-      <h3>How the labels are made</h3>
+    <details>
+      <summary>Where the data come from</summary>
+      <p>The corpus is the papers accepted for presentation at the Annual Congress
+        of the European Accounting Association in nine congress years, 2015 to 2018
+        and 2022 to 2026. Comparable records are not available for 2019 to 2021, so
+        those years are absent rather than empty. The unit is one accepted paper
+        with a usable abstract; papers that were submitted but not accepted are not
+        part of it. Eighty-eight papers appear at two congresses under the same
+        title and primary author and are counted once, at their first appearance.
+        A paper&#8217;s country is the country of its primary author&#8217;s affiliation.</p>
+    </details>
+    <details>
+      <summary>How the labels are made</summary>
       <p>Large language models read each abstract and assign labels from a fixed
         vocabulary of 25 topics, 14 method families and 8 data sources, with the
         same prompts and settings in every congress year, so movement in a series
-        reflects the research rather than a change of coding. Topics and methods
-        are multi-label and their shares do not sum to 100; the data source is
-        single-label. The method labels were checked against the codes authors
-        chose for themselves on the EAA submission form: across the 6,013 papers
-        carrying both, the two agree in 87.2 percent of cases, with a Cohen&#8217;s
-        kappa of 0.739. The labels are ours, not the authors&#8217; own.</p>
-    </div>
+        reflects the research rather than a change of coding. Topics and methods are
+        multi-label and their shares do not sum to 100; the data source is
+        single-label. The method labels were checked against the codes authors chose
+        for themselves on the EAA submission form: across the 6,013 papers carrying
+        both, the two agree in 87.2 percent of cases, with a Cohen&#8217;s kappa of
+        0.739. The labels are ours, not the authors&#8217; own.</p>
+    </details>
+    <details>
+      <summary>What the accounting families are</summary>
+      <p>Countries are grouped in the Nobes tradition (Nobes 1983, 1998, 2006),
+        which sorts national accounting environments by historically persistent
+        institutional differences rather than by geography. A family aggregates
+        every country assigned to it, including those too small to appear on their
+        own in the country filter. Listed below are the countries the corpus
+        contains; the map view draws the same grouping.</p>
+      <ul class="fams" id="fam-list"></ul>
+    </details>
+    <details>
+      <summary>What this page publishes, and how to reuse it</summary>
+      <p>The file behind this page holds six numbers for each paper: congress year,
+        author country, topic and method labels, data source and evidence country.
+        No names, no titles, no abstracts, no affiliations and nothing at the level
+        of an institution. The build refuses to publish if any of those ever reach a
+        file a visitor receives. The congress programmes are public, so a rare
+        combination of labels could in principle be traced back to a paper; the
+        tables print the base of every row so that small cells are not over-read.
+        Figures can differ from the published paper where it applies further sample
+        restrictions.</p>
+      <p>The data are under CC BY 4.0, the code under the MIT licence, and both are
+        in <a href="https://github.com/janikolewecks/european-accounting-research-map">the project repository</a> together with the scripts
+        that produced them. Map outlines from Natural Earth, public domain.</p>
+    </details>
   </div>
-
-  <div class="famblock">
-    <h3>Accounting families</h3>
-    <p>Countries are grouped in the Nobes tradition (Nobes 1983, 1998, 2006),
-      which sorts national accounting environments by historically persistent
-      institutional differences rather than by geography. A family aggregates every
-      country assigned to it, including those too small to appear on their own in
-      the country filter. Listed below are the countries the corpus contains; the
-      map view draws the same grouping.</p>
-    <ul class="fams" id="fam-list"></ul>
-  </div>
-
-  <p class="foot">
-    <b>What the file behind this page contains.</b> Six numbers for each paper:
-    congress year, author country, topic and method labels, data source and
-    evidence country. No names, no titles, no abstracts, no affiliations and
-    nothing at the level of an institution. The build refuses to publish if any
-    of those ever reach a file a visitor receives. The congress programmes are
-    public, so a rare combination of labels could in principle be traced back to
-    a paper; the tables print the base of every row so that small cells are not
-    over-read. Figures can differ from the published paper where it applies
-    further sample restrictions.
-    <b>Reuse.</b> The data are under CC BY 4.0, the code under the MIT licence,
-    and both are in <a href="https://github.com/janikolewecks/european-accounting-research-map">the project repository</a> together with
-    the scripts that produced them. Map outlines from Natural Earth, public
-    domain.
-  </p>
 </div>
 
-<script src="data.js"></script>
+<script src="data.js?v=243fd4499f"></script>
 <script>
 const D = window.__EAA_DATA__;
 const GEO = window.__EAA_GEO__;
@@ -1195,12 +1194,23 @@ function buildPicker() {
       drawTrends();
     }));
 }
+// One view failing must never take the others down with it. Each draw stands
+// alone and reports into its own panel; the error still reaches the console.
+function draw(host, fn) {
+  try { fn(); } catch (e) {
+    console.error(e);
+    const h = document.getElementById(host);
+    if (h) h.innerHTML = '<p class="mnote">This view could not be drawn. Reload the page ' +
+      '&#8212; if that does not help, the page and its data file are out of step.</p>';
+  }
+}
 function renderAll() {
   const n = slice().length;
   document.getElementById('f-count').textContent = n.toLocaleString('en-US') + ' submissions in view';
-  buildPicker(); drawTrends();
-  buildMapLabels(); syncMap(); drawMap();
-  drawProfiles(); drawCross();
+  draw('t-plot', () => { buildPicker(); drawTrends(); });
+  draw('m-plot', () => { buildMapLabels(); syncMap(); drawMap(); });
+  draw('pr-plot', drawProfiles);
+  draw('x-plot', drawCross);
 }
 // segmented controls carry their value in a data attribute named after the
 // state key, so the state can always be written back onto the buttons

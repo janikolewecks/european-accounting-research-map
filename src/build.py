@@ -11,6 +11,7 @@ Outputs
 GitHub Pages can serve a site straight from the docs/ folder of the default
 branch, which is why the hosted build lands there.
 """
+import hashlib
 import sys
 from pathlib import Path
 
@@ -76,8 +77,13 @@ single = tpl.replace("__DATA__", raw).replace("__GEO__", geo)
 # ---- hosted build: full document, data in a sibling file ---------------
 docs = ROOT / "docs"
 docs.mkdir(exist_ok=True)
+# A browser that still holds the previous data.js would pair it with this
+# fresh page: the file it expects would be missing and the views that need
+# it would go blank. Stamp the request with the content hash so a new page
+# can never be served an old payload.
+stamp = hashlib.sha1((raw + geo).encode("utf-8")).hexdigest()[:10]
 body = tpl.replace("<script>\nconst D = __DATA__;\nconst GEO = __GEO__;",
-                   '<script src="data.js"></script>\n<script>\n'
+                   '<script src="data.js?v=' + stamp + '"></script>\n<script>\n'
                    'const D = window.__EAA_DATA__;\nconst GEO = window.__EAA_GEO__;')
 assert "__DATA__" not in body and "__GEO__" not in body, "hosted splice failed"
 

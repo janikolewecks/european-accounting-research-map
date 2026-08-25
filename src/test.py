@@ -210,14 +210,44 @@ with sync_playwright() as p:
     ck("map tooltip shows",
        pg.eval_on_selector("#m-tip", "e => +getComputedStyle(e).opacity") > 0.5)
 
-    # the families are defined on the page, from the data rather than by hand
+    # the notes are collapsed by default and open on demand
+    ck("the notes start collapsed",
+       pg.eval_on_selector_all(".notes details[open]", "e => e.length") == 0)
+    pg.eval_on_selector_all(".notes details", "ds => ds.forEach(d => d.open = true)")
+    pg.wait_for_timeout(200)
     fams = pg.eval_on_selector_all("#fam-list li", "e => e.length")
     ck("every family is defined in the notes", fams == 5, f"got {fams}")
     ck("the definition names its countries",
        "Germany" in pg.inner_text("#fam-list") and "Sweden" in pg.inner_text("#fam-list"))
+    ck("the notes carry the provenance and the licence",
+       "accepted for presentation" in pg.inner_text(".notes")
+       and "CC BY 4.0" in pg.inner_text(".notes"))
+
+    # --- one broken view must not blank the others ------------------------
+    # A stale data file once made drawMap throw, which left profiles and
+    # combinations empty because they were drawn after it.
+    pg.evaluate("() => { window._realMap = drawMap; drawMap = () => { throw new Error('test'); }; }")
+    pg.evaluate("() => renderAll()")
+    pg.wait_for_timeout(300)
+    ck("a failing view still lets the others draw",
+       pg.eval_on_selector_all("#pr-plot svg", "e => e.length") == 1
+       and pg.eval_on_selector_all("#x-plot svg", "e => e.length") == 1)
+    ck("the failing view says so in its own panel",
+       "could not be drawn" in pg.inner_text("#m-plot"), pg.inner_text("#m-plot")[:60])
+    pg.evaluate("() => { drawMap = window._realMap; renderAll(); }")
+    pg.wait_for_timeout(300)
+    ck("restoring the view brings the map back",
+       pg.eval_on_selector_all("#m-plot svg", "e => e.length") >= 1)
+    errs.clear()   # the thrown test error is expected and was logged on purpose
 
     ck("no console errors after interaction", not errs, str(errs[:2]))
     b.close()
+
+# --- the hosted page must never be able to load an older data file --------
+hosted = (HERE.parent / "docs" / "index.html").read_text(encoding="utf-8")
+ck("the hosted page requests its data file with a version stamp",
+   'src="data.js?v=' in hosted,
+   hosted[hosted.find("data.js") - 20:hosted.find("data.js") + 20] if "data.js" in hosted else "no reference")
 
 print(f"{checks - len(fails)}/{checks} checks passed")
 for f in fails:
