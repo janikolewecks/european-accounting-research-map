@@ -1,0 +1,127 @@
+# Handover — European Accounting Research Map
+
+**Stand 2026-08-25. Diese Datei zuerst lesen.** Sie beschreibt den
+IST-Zustand. Das fachliche Warum steht in `README.md`.
+
+Dieses Projekt ist ein **Nebenstrang** der EAA-Metastudie. Das Paper selbst
+wird in einem anderen Chat bearbeitet; Projektstand dort:
+`C:\Users\jwecks\Dropbox\17_EAA_Research\idea_Z\PROJECT_STATE.md`.
+Hier geht es ausschliesslich um das oeffentliche Dashboard.
+
+---
+
+## 1. Was es ist und wo es liegt
+
+Interaktive Begleitseite zum Konvergenz-Paper: was europaeische
+Rechnungslegungsforscher untersuchen, womit, und woher ihre Evidenz kommt.
+7.443 EAA-Kongresseinreichungen, neun Jahrgaenge, drei Ansichten.
+
+| Was | Wo |
+|---|---|
+| Projekt | `C:\Users\jwecks\Dropbox\EAA-Research-Map\` |
+| **LIVE** | https://janikolewecks.github.io/european-accounting-research-map/ |
+| Repository | https://github.com/janikolewecks/european-accounting-research-map (public) |
+| Artefakt (Vorschau im Chat) | https://claude.ai/code/artifact/b49ee1ea-481e-4b38-b52a-2e7550c7cfc0 |
+| Quellkorpus (nur lesend) | `17_EAA_Research\idea_Z\analysis\out\corpus_with_2026.parquet` |
+
+Ordner: `src/` Quellen, `data/` anonymisierter Auszug, `docs/` das was
+GitHub Pages ausliefert, `build/` Einzeldatei fuers Artefakt, `shots/`
+Screenshots.
+
+---
+
+## 2. Live-Status (von aussen geprueft, 2026-08-25)
+
+index.html, data.js und preview.png liefern HTTP 200 mit korrektem
+Content-Type; HTTP leitet per 301 auf HTTPS um; Titel, viewport, canonical,
+og:image und `lang="en"` stehen; drei Charts rendern; keine Konsolenfehler;
+Periodenfilter greift; mobil kein Querscroll.
+
+---
+
+## 3. Arbeitsablauf
+
+    python src/export_data.py   # liest den Korpus, schreibt data/
+    python src/build.py         # baut docs/ und build/, faehrt die Pruefung
+    python src/test.py          # 32 Funktionstests (Playwright)
+    python src/shot.py          # Screenshots hell/dunkel/mobil
+    git add -A && git commit -m "..." && git push     # Pages deployt selbst
+
+**KEINE Browser-Previews** (`mcp__Claude_Browser__preview_start`) — hat die
+Sitzung mehrfach zum Absturz gebracht. Playwright direkt benutzen, das
+laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
+
+---
+
+## 4. Feste Entscheidungen (nicht ohne Ruecksprache aendern)
+
+1. **Fuenf kategoriale Farben, nicht sechs.** Palette aus dem EAA-CI
+   (Koenigsblau `#225493`, Cyan `#009acc`). Eine sechste Farbe hielt das
+   Farbfehlsichtigkeits-Gate im Dunkelmodus nicht. Geprueft mit dem
+   Validator des dataviz-Skills: schlechtestes Nachbarpaar dE 19,4 hell /
+   15,4 dunkel gegen Zielwert 8. **Bei Farbaenderung neu validieren.**
+2. **Schriftpaarung** Newsreader (Serife, Masthead/Ueberschriften/Reiter) +
+   IBM Plex Sans (Bedienung) + IBM Plex Mono (Ziffern). Ergebnis eines
+   Audits gegen den avoid-ai-design-Katalog; die Fundtabelle steht im
+   README. Nicht auf eine einzelne Schrift zurueckbauen.
+3. **Keine Karten/Boxen**, Struktur ueber Haarlinien und Weissraum
+   (Swiss/International). Radius null.
+4. **Datenlueckenbehandlung:** 2019-2021 gestrichelt und abgeblendet
+   ueberbrueckt; ein Jahr ohne Einreichungen ist `null`, nicht 0.
+5. **Adresse zentral** in `src/config.py` (`DOMAIN`, `GH_USER`, `GH_REPO`).
+   Alles leitet sich davon ab: canonical, Social-Cards, CNAME und die
+   Host-Freigabe der Datenschutzpruefung. Nirgends sonst haendisch setzen.
+6. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
+   Dateien gegen 5.489 Autorennamen, 2.669 Affiliationen, 5.957
+   Ko-Autoren-Eintraege, 7.458 Titel, Abstracts und vier LLM-Freitextfelder.
+   `build.py` **loescht die Auslieferungsdateien**, wenn etwas durchrutscht.
+   Das Gate wurde durch Einschleusen eines echten Namens getestet.
+   Nicht abschalten, nicht umgehen.
+
+---
+
+## 5. OFFEN
+
+**Entscheidungen des Nutzers:**
+- **Domain.** Frei geprueft und alle verfuegbar: `accounting-research-map.eu`
+  (meine Empfehlung, lesbar, deckt sich mit dem Titel),
+  `accountingresearchmap.eu`, `accounting-research-trends.eu`,
+  `accountingresearchtrends.eu`. Umsetzung: `DOMAIN` in `config.py` setzen,
+  neu bauen, DNS beim Registrar (A/AAAA + CNAME, Adressen im README),
+  dann "Enforce HTTPS". Registrar-Tipp: WHOIS-Privacy und Auto-Renew an.
+- **Titel.** Nutzer erwog "Accounting Research Trends". Mein Rat: bei
+  "European Accounting Research Map" bleiben, weil "Trends" nur eine von
+  drei Ansichten benennt, "European" (die tatsaechliche Reichweite) faellt
+  und der Begriff generisch besetzt ist. Falls doch "Trends": den ersten
+  Reiter in "Over time" umbenennen, sonst steht das Wort doppelt.
+- **Lizenz.** Es gibt noch KEINE. Ohne Lizenz gilt "alle Rechte
+  vorbehalten", was fuer ein Community-Werkzeug das Gegenteil des
+  Gewollten ist. Uebliche Kombination: CC BY 4.0 fuer die Daten,
+  MIT fuer den Code. Auf Zuruf anlegen.
+- **EAA ansprechen?** Die Seite traegt Namen und Farben des Verbands. Rat:
+  mit der fertigen Seite auf sie zugehen, nicht vorher fragen.
+- **`D:\Users\wecks\data_ralph`** — Nutzer nannte diesen Pfad ohne Kontext.
+  Es ist der 286-GB-Forschungs-Data-Lake (58 Datensatzordner, `CATALOG.json`
+  als maschinenlesbares Inventar). Zweck unklar. Zwei Lesarten: Projekt
+  dorthin verschieben (davon abgeraten) oder ein aehnliches Werkzeug fuer
+  den Katalog bauen. **Nachfragen, nichts anfassen.**
+
+**Fachlich zu klaeren:**
+- **2017er Ausschlag bei Sustainability**: 17,3 % gegen rund 9 % in den
+  Nachbarjahren. So in den Labels, nicht geglaettet. Im Paper faellt es
+  nicht auf (Periodenmittel), auf der Seite sieht es jeder sofort. Vor
+  breiter Streuung klaeren, ob echter Jahrgangseffekt oder Artefakt.
+
+**Moegliche Ausbaustufen:**
+- Konvergenz-Explorer als vierte Ansicht (bewusst zurueckgestellt).
+- Zenodo-Archivierung je Jahresversion fuer eine zitierfaehige DOI.
+
+---
+
+## 6. Zahlen, die stimmen muessen
+
+7.443 Einreichungen gesamt, 4.881 mit europaeischem Erstautor, 32
+europaeische Laender, neun Jahrgaenge 2015-2018 und 2022-2026, 25 Themen,
+14 Methoden, 8 Datenquellen. Datendatei 167 KB roh, 41 KB gepackt.
+Vorberechnete Aggregate waeren 142 KB gewesen, also 3,5x groesser — deshalb
+liefert die Seite Papierzeilen aus, nicht Aggregate.
