@@ -1,6 +1,6 @@
 # Handover — European Accounting Research Map
 
-**Stand 2026-08-25. Diese Datei zuerst lesen.** Sie beschreibt den
+**Stand 2026-08-25, zweite Fassung. Diese Datei zuerst lesen.** Sie beschreibt den
 IST-Zustand. Das fachliche Warum steht in `README.md`.
 
 Dieses Projekt ist ein **Nebenstrang** der EAA-Metastudie. Das Paper selbst
@@ -14,7 +14,8 @@ Hier geht es ausschliesslich um das oeffentliche Dashboard.
 
 Interaktive Begleitseite zum Konvergenz-Paper: was europaeische
 Rechnungslegungsforscher untersuchen, womit, und woher ihre Evidenz kommt.
-7.443 EAA-Kongresseinreichungen, neun Jahrgaenge, drei Ansichten.
+7.443 EAA-Kongresseinreichungen, neun Jahrgaenge, vier Ansichten:
+Trends, Karte, Profile, Kombinationen.
 
 | Was | Wo |
 |---|---|
@@ -42,8 +43,9 @@ Periodenfilter greift; mobil kein Querscroll.
 ## 3. Arbeitsablauf
 
     python src/export_data.py   # liest den Korpus, schreibt data/
+    python src/build_geo.py     # nur noetig, wenn sich die Laenderliste aendert
     python src/build.py         # baut docs/ und build/, faehrt die Pruefung
-    python src/test.py          # 32 Funktionstests (Playwright)
+    python src/test.py          # 53 Funktionstests (Playwright)
     python src/shot.py          # Screenshots hell/dunkel/mobil
     git add -A && git commit -m "..." && git push     # Pages deployt selbst
 
@@ -71,12 +73,25 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
 5. **Adresse zentral** in `src/config.py` (`DOMAIN`, `GH_USER`, `GH_REPO`).
    Alles leitet sich davon ab: canonical, Social-Cards, CNAME und die
    Host-Freigabe der Datenschutzpruefung. Nirgends sonst haendisch setzen.
-6. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
+6. **Kartengeometrie liegt in der Seite**, nicht bei einem Kartendienst.
+   Natural Earth (gemeinfrei), vereinfacht und projiziert, 83 KB. Europa in
+   EPSG:3035, die Evidenzansicht in Equal Earth, weil die groesste einzelne
+   Evidenzquelle die USA sind. Der Rahmen wird **im projizierten Raum**
+   zugeschnitten; ein Grad-Rechteck erzeugt sonst einen Russland-Keil.
+   Malta, Luxemburg und Monaco werden als Punkte gezeichnet, sonst
+   verschwinden sie. Zaehlungen werden wurzelskaliert, Anteile linear,
+   Anteile unter 10 Einreichungen schraffiert statt eingefaerbt.
+7. **Lizenz:** Code MIT (`LICENSE`), Daten CC BY 4.0 (`LICENSE-DATA.txt`,
+   enthaelt den amtlichen Volltext). Als Rechteinhaber steht dort bisher nur
+   Janik Ole Wecks &#8212; **vor Veroeffentlichung klaeren, ob die Koautoren
+   dazugehoeren.**
+8. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
    Dateien gegen 5.489 Autorennamen, 2.669 Affiliationen, 5.957
    Ko-Autoren-Eintraege, 7.458 Titel, Abstracts und vier LLM-Freitextfelder.
    `build.py` **loescht die Auslieferungsdateien**, wenn etwas durchrutscht.
    Das Gate wurde durch Einschleusen eines echten Namens getestet.
-   Nicht abschalten, nicht umgehen.
+   Nicht abschalten, nicht umgehen. Pruefung H deckt seit der Karte auch
+   `data/map_geo.json` ab.
 
 ---
 
@@ -94,10 +109,9 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
   drei Ansichten benennt, "European" (die tatsaechliche Reichweite) faellt
   und der Begriff generisch besetzt ist. Falls doch "Trends": den ersten
   Reiter in "Over time" umbenennen, sonst steht das Wort doppelt.
-- **Lizenz.** Es gibt noch KEINE. Ohne Lizenz gilt "alle Rechte
-  vorbehalten", was fuer ein Community-Werkzeug das Gegenteil des
-  Gewollten ist. Uebliche Kombination: CC BY 4.0 fuer die Daten,
-  MIT fuer den Code. Auf Zuruf anlegen.
+- **Lizenz-Rechteinhaber.** Die Lizenzen liegen (MIT + CC BY 4.0). Genannt
+  ist nur der Repository-Eigentuemer. Falls der annotierte Korpus
+  Gemeinschaftsarbeit ist, gehoeren die Koautoren in beide Dateien.
 - **EAA ansprechen?** Die Seite traegt Namen und Farben des Verbands. Rat:
   mit der fertigen Seite auf sie zugehen, nicht vorher fragen.
 - **`D:\Users\wecks\data_ralph`** — Nutzer nannte diesen Pfad ohne Kontext.
@@ -105,6 +119,16 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
   als maschinenlesbares Inventar). Zweck unklar. Zwei Lesarten: Projekt
   dorthin verschieben (davon abgeraten) oder ein aehnliches Werkzeug fuer
   den Katalog bauen. **Nachfragen, nichts anfassen.**
+
+**Rueckmeldung des Koautors vom 25.08.2026, Stand der Umsetzung:**
+- Kartenansicht &#8212; umgesetzt (Reiter "Map": Einreichungen, Familien,
+  Anteil eines Labels; Autoren- oder Evidenzland; Europa oder Welt).
+- Familien eindeutig beschreiben &#8212; umgesetzt (Familienkarte,
+  Nobes-Herkunft und Laenderliste im Abspann, aus den Daten erzeugt).
+- Weniger AI-Sprache, konkretere Datenherkunft &#8212; umgesetzt (Abspann
+  nennt Annahme statt Einreichung, die neun Jahrgaenge, die 88 Dubletten,
+  das Land als Erstautoren-Affiliation und die Validierung gegen die
+  Selbstcodierung: 6.013 Papiere, 87,2 Prozent, Kappa 0,739).
 
 **Fachlich zu klaeren:**
 - **2017er Ausschlag bei Sustainability**: 17,3 % gegen rund 9 % in den

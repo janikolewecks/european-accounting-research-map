@@ -2,7 +2,7 @@ Privacy audit of the published files
 ====================================================
 PASS  A structure: every row is six integers  --  7,443 rows checked
 PASS  B whitelist: no string outside the fixed vocabulary  --  236 distinct strings, all accounted for
-PASS  targets present  --  4/4 files: dashboard_data.json, data.js, index.html, dashboard.html
+PASS  targets present  --  5/5 files: dashboard_data.json, map_geo.json, data.js, index.html, dashboard.html
 PASS  C author names: absent from every published file  --  5,489 values tested
 PASS  D affiliations: absent from every published file  --  2,669 values tested
 PASS  D co-author records: absent from every published file  --  5,957 values tested
@@ -11,6 +11,7 @@ PASS  F abstracts: absent from every published file  --  7,463 values tested
 PASS  F topic reasoning: absent from every published file  --  7,487 values tested
 PASS  F method reasoning: absent from every published file  --  7,503 values tested
 PASS  F evidence reasoning: absent from every published file  --  7,497 values tested
-PASS  G contact data: no e-mail, ORCID or unexpected host  --  font service and SVG namespace only
+PASS  G contact data: no e-mail, ORCID or unexpected host  --  font service, SVG namespace and the project repository
+PASS  H map geometry: country codes and coordinates only  --  238 outlines in 2 frames
 
 ALL CHECKS PASSED

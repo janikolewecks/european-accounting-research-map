@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Natural Earth downloads: 3.9 MB of source cartography that src/build_geo.py
+# re-fetches on demand. The built outlines in data/map_geo.json are committed.
+src/vendor/

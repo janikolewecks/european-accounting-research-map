@@ -13,6 +13,7 @@ Checks
   E  titles         no submission title occurs anywhere in the text
   F  free text      no abstract or model-reasoning text occurs in the text
   G  contact data   nothing that looks like an e-mail, ORCID or URL
+  H  map geometry   the outlines carry country codes and coordinates only
 """
 import json
 import re
@@ -25,6 +26,7 @@ CORPUS = RESEARCH / "idea_Z" / "analysis" / "out" / "corpus_with_2026.parquet"
 
 # every file that actually reaches a visitor
 TARGETS = [PROJECT / "data" / "dashboard_data.json",
+           PROJECT / "data" / "map_geo.json",
            PROJECT / "docs" / "data.js",
            PROJECT / "docs" / "index.html",
            PROJECT / "build" / "dashboard.html"]
@@ -117,9 +119,9 @@ def main():
     # ---- G contact data --------------------------------------------------
     # Hosts the page is meant to reach: the font service and the SVG namespace,
     # plus our own canonical address. Anything else would be an outbound leak.
-    from config import SITE_HOST
+    from config import SITE_HOST, REPO_HOST
     ALLOWED_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com",
-                     "www.w3.org", SITE_HOST)
+                     "www.w3.org", SITE_HOST, REPO_HOST)
     email = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
     url = re.compile(r"https?://([A-Za-z0-9.-]+)")
     leaks = []
@@ -132,7 +134,26 @@ def main():
             if host not in ALLOWED_HOSTS:
                 leaks.append(f"{fn}: outbound host {host}")
     check("G contact data: no e-mail, ORCID or unexpected host", not leaks,
-          "font service and SVG namespace only" if not leaks else "; ".join(leaks[:4]))
+          "font service, SVG namespace and the project repository" if not leaks else "; ".join(leaks[:4]))
+
+    # ---- H map geometry --------------------------------------------------
+    # The outlines are public-domain cartography, but they travel in the same
+    # payload as the labels, so they get checked rather than trusted.
+    geo = json.loads((PROJECT / "data" / "map_geo.json").read_text(encoding="utf-8"))
+    coord = re.compile(r"^[MLZ0-9 .-]+$")
+    bad_geo, shapes = [], 0
+    for fname, frame in geo.items():
+        if sorted(frame.keys()) != ["area", "cent", "h", "paths", "w"]:
+            bad_geo.append(f"{fname}: unexpected keys {sorted(frame.keys())}")
+            continue
+        for code, d in frame["paths"].items():
+            shapes += 1
+            if not re.fullmatch(r"[A-Z]{2}", code):
+                bad_geo.append(f"{fname}: odd key {code!r}")
+            elif not coord.match(d):
+                bad_geo.append(f"{fname}: {code} path holds more than coordinates")
+    check("H map geometry: country codes and coordinates only", not bad_geo,
+          f"{shapes} outlines in {len(geo)} frames" if not bad_geo else "; ".join(bad_geo[:3]))
 
     report = PROJECT / "data" / "privacy_audit.txt"
     report.write_text("Privacy audit of the published files\n" + "=" * 52 + "\n"

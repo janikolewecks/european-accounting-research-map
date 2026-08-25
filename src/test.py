@@ -138,6 +138,84 @@ with sync_playwright() as p:
        rv[:-1] in pg.inner_text("#x-title").lower() and cv[:-1] in pg.inner_text("#x-title").lower(),
        pg.inner_text("#x-title"))
 
+    # --- the map ----------------------------------------------------------
+    pg.click('.tabs button[data-view="map"]'); pg.wait_for_timeout(400)
+    shapes = pg.eval_on_selector_all("#m-plot path.shape", "e => e.length")
+    ck("europe frame draws its outlines", shapes > 40, f"got {shapes}")
+    ck("map has a colour ramp", pg.eval_on_selector_all("#m-legend .ramp svg", "e => e.length") == 1)
+
+    coloured = """() => {
+        const cv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+        const plane = cv('--plane'), chip = cv('--chip');
+        return [...document.querySelectorAll('#m-plot .shape')].filter(e => {
+            const f = e.getAttribute('fill');
+            return f && f !== plane && f !== chip && !f.startsWith('url'); }).length; }"""
+    all_eu = pg.evaluate(coloured)
+    ck("countries with submissions are shaded", all_eu >= 25, f"got {all_eu}")
+
+    # the group filter selects countries, so the map must honour it
+    pg.select_option("#f-group", "f:Nordic"); pg.wait_for_timeout(400)
+    nordic_n = pg.evaluate(coloured)
+    ck("group filter narrows the map", 0 < nordic_n < all_eu, f"{nordic_n} of {all_eu}")
+    ck("legend explains the unshaded countries",
+       "outside the current selection" in pg.inner_text("#m-legend"), pg.inner_text("#m-legend"))
+    pg.select_option("#f-group", "all"); pg.wait_for_timeout(400)
+
+    # countries too small to survive simplification still appear
+    dots = pg.eval_on_selector_all("#m-plot circle.shape", "e => e.length")
+    ck("micro-states are drawn as markers", dots >= 2, f"got {dots}")
+
+    # evidence reaches beyond Europe, so the frame follows the basis
+    pg.click('#m-basis button[data-mbasis="evidence"]'); pg.wait_for_timeout(450)
+    ck("evidence basis switches the frame to the world",
+       pg.eval_on_selector('#m-frame button[data-mframe="world"]',
+                           "e => e.getAttribute('aria-pressed')") == "true")
+    note = pg.inner_text("#m-note")
+    ck("unmapped papers are declared", "no single country" in note, note[:80])
+    pg.click('#m-frame button[data-mframe="europe"]'); pg.wait_for_timeout(450)
+    note = pg.inner_text("#m-note")
+    ck("papers outside the frame are declared", "outside this frame" in note, note[:90])
+    ck("the largest outside evidence country is named", "United States" in note, note[:90])
+    pg.click('#m-basis button[data-mbasis="author"]'); pg.wait_for_timeout(400)
+
+    # shares of a label are suppressed on a small base rather than drawn
+    pg.select_option("#m-show", "topics"); pg.wait_for_timeout(450)
+    ck("choosing a dimension reveals the label menu",
+       pg.eval_on_selector("#m-label-fld", "e => !e.hidden"))
+    ck("share mode names the label in the heading",
+       pg.inner_text("#m-title") == pg.eval_on_selector("#m-label", "e => e.selectedOptions[0].text")
+       + ", by author country", pg.inner_text("#m-title"))
+    ck("share mode marks a thin base rather than colouring it",
+       "fewer than 10" in pg.inner_text("#m-legend") or
+       "too few" in pg.inner_text("#m-table"), pg.inner_text("#m-legend"))
+
+    # the families view is a reference map and says so
+    pg.select_option("#m-show", "family"); pg.wait_for_timeout(450)
+    ck("family view hides the basis control",
+       pg.eval_on_selector("#m-basis-fld", "e => e.hidden"))
+    ck("family view has one swatch per family",
+       pg.eval_on_selector_all("#m-legend span", "e => e.length") >= 5)
+    ck("family view marks the group filter as unused",
+       "not used" in pg.inner_text("#f-group-note"), pg.inner_text("#f-group-note"))
+    pg.select_option("#m-show", "volume"); pg.wait_for_timeout(400)
+    ck("leaving the family view restores the group filter",
+       pg.inner_text("#f-group-note").strip() == "")
+
+    # table and tooltip
+    pg.click('[data-table="m"]'); pg.wait_for_timeout(250)
+    ck("map table has rows", pg.eval_on_selector_all("#m-table tbody tr", "e => e.length") > 10)
+    box = pg.query_selector("#m-plot svg").bounding_box()
+    pg.mouse.move(box["x"] + box["width"] * 0.52, box["y"] + box["height"] * 0.55)
+    pg.wait_for_timeout(260)
+    ck("map tooltip shows",
+       pg.eval_on_selector("#m-tip", "e => +getComputedStyle(e).opacity") > 0.5)
+
+    # the families are defined on the page, from the data rather than by hand
+    fams = pg.eval_on_selector_all("#fam-list li", "e => e.length")
+    ck("every family is defined in the notes", fams == 5, f"got {fams}")
+    ck("the definition names its countries",
+       "Germany" in pg.inner_text("#fam-list") and "Sweden" in pg.inner_text("#fam-list"))
+
     ck("no console errors after interaction", not errs, str(errs[:2]))
     b.close()
 

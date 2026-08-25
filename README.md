@@ -6,20 +6,27 @@ Evidence from the Annual Congress of the European Accounting Association,
 An interactive companion to the convergence paper. It shows what European
 accounting researchers study, how they study it and where their evidence
 comes from, across nine congress years, filterable by country, accounting
-family and period.
+family and period. Four views: trends over time, a map, country and family
+profiles, and cross-tabulations.
 
 ## Layout
 
     data/     dashboard_data.json    the anonymized extract the page reads
+              map_geo.json           country outlines as SVG path data
     src/      export_data.py         builds that extract from the labelled corpus
-              template.html          the page, with a __DATA__ placeholder
-              build.py               splices data into the two output shapes
-              test.py                21 functional checks (Playwright)
+              build_geo.py           builds the outlines from Natural Earth
+              template.html          the page, with __DATA__ and __GEO__ placeholders
+              build.py               splices both into the two output shapes
+              audit_privacy.py       the gate build.py runs before publishing
+              config.py              the site address, used by build and audit
+              test.py                53 functional checks (Playwright)
               shot.py                screenshots, light and dark, desktop and mobile
+              vendor/                cached Natural Earth source, not committed
     docs/     index.html, data.js,   >>> this is what GitHub Pages serves <<<
               preview.png, .nojekyll
     build/    dashboard.html         bare fragment, for the Artifact viewer
     shots/    rendered screenshots
+    LICENSE, LICENSE-DATA.txt        MIT for the code, CC BY 4.0 for the data
 
 The labelled corpus itself stays in the research repository
 (`17_EAA_Research`); `src/export_data.py` points at it and is the only file
@@ -28,8 +35,12 @@ that touches it.
 ## Updating for a new congress year
 
     python src/export_data.py     # re-reads the corpus, rewrites data/
-    python src/build.py           # rebuilds site/ and build/
-    python src/test.py            # 21 checks should pass
+    python src/build.py           # rebuilds docs/ and build/, runs the privacy gate
+    python src/test.py            # 53 checks should pass
+
+The map outlines change only if the country list does:
+
+    python src/build_geo.py       # re-fetches Natural Earth, rewrites data/map_geo.json
 
 Then `git add -A && git commit -m "congress year 2027" && git push`. Pages
 redeploys in about a minute. The page reads the vocabularies, the country
@@ -96,12 +107,25 @@ because a domain lapsed is the most common way these things disappear.
 
 ### Before it goes public
 
-- Decide on a licence. A research artifact of this kind usually carries
-  CC BY 4.0 for the data and MIT for the code. Nothing is licensed yet.
 - Settle the EAA question, since the page carries the association's name and
   colours.
 - Note that publishing is effectively one-way: once the data file is public
   and indexed, taking it down does not un-publish it.
+
+## Licence
+
+The code is under the MIT licence (`LICENSE`). The data are under CC BY 4.0
+(`LICENSE-DATA.txt`), which also states the attribution to use and what the
+licence does not cover: the underlying congress records, which are not ours
+to license and are not published here.
+
+The map outlines in `data/map_geo.json` derive from Natural Earth, which is
+public domain and requires no attribution; the credit in the footer and in
+the data licence is a courtesy.
+
+The copyright holder named in both files is the repository owner. If the
+labelled corpus is joint work, the co-authors belong there too, and both
+files need editing before the licence means what it should.
 
 ## What the data contains, and how that is enforced
 
@@ -131,7 +155,8 @@ would carry risk without informing the reader.
 | D co-authors | no co-author record occurs | 5,957 records |
 | E titles | no submission title occurs | 7,458 titles |
 | F free text | no abstract or model-reasoning text occurs | 7,463 abstracts, 3 reasoning fields |
-| G contact data | no e-mail, ORCID or unexpected outbound host | font service and SVG namespace only |
+| G contact data | no e-mail, ORCID or unexpected outbound host | font service, SVG namespace, own repository |
+| H map geometry | the outlines carry two-letter country codes and coordinates, nothing else | 238 outlines in 2 frames |
 
 `build.py` runs the audit after writing the files and **deletes the hosted
 output if any check fails**, so a leaking site cannot sit on disk waiting to
@@ -218,6 +243,24 @@ those years. The series are drawn solid up to 2018 and from 2022, and joined
 across the gap by a dashed, faded segment, so a line can be followed without
 suggesting that a value was observed in between.
 
+**The map carries its own cartography rather than a tile service.** The
+outlines are simplified Natural Earth geometry, projected and inlined as SVG
+path data: 83 KB, no external request, nothing to keep alive. Europe uses
+ETRS89 / LAEA (EPSG:3035), the standard European frame; the evidence view
+uses Equal Earth, because the largest single source of evidence in the corpus
+is the United States. The frame is cut in projected space around the
+countries the corpus actually contains, since a rectangle in degrees becomes
+a wedge once projected and leaves a meaningless triangle of Russia in the
+corner. Countries too small to survive simplification, Malta, Luxembourg and
+Monaco, are drawn as markers so they cannot silently disappear.
+
+**Counts and shares are shaded differently on the map.** Submission counts
+run on a square-root scale, because two countries would otherwise flatten
+the other thirty; shares run linear. The legend prints the actual break
+values in both cases, so the scale is never something the reader has to
+infer. A share on fewer than ten submissions is hatched rather than coloured:
+below that base a percentage says more about the base than about the country.
+
 **Every chart has a table view.** Colour is never the only route to a value.
 The heatmap also prints the row base, deviations are labelled at the bar
 ends, and lines are labelled directly at the right edge.
@@ -235,6 +278,8 @@ carries the association's identity.
 
 ## Open questions
 
+- Whether the co-authors of the corpus should be named as copyright holders
+  in `LICENSE` and `LICENSE-DATA.txt`. Only the repository owner is named now.
 - Whether to approach the EAA before publishing, and whether they want to
   host or endorse it. Recommendation: show them the working prototype.
 - The 2017 spike in the sustainability series (17.3 percent against roughly

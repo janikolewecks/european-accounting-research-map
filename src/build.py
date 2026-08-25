@@ -16,8 +16,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "dashboard_data.json"
+GEO = ROOT / "data" / "map_geo.json"
 
-from config import DOMAIN, SITE_URL  # noqa: E402
+from config import DOMAIN, SITE_URL, REPO_URL  # noqa: E402
 
 TITLE = "European Accounting Research Map"
 DESC = ("What European accounting researchers study, how they study it and "
@@ -62,19 +63,23 @@ HEAD = f"""<!doctype html>
 
 tpl = (ROOT / "src" / "template.html").read_text(encoding="utf-8")
 raw = DATA.read_text(encoding="utf-8")
+geo = GEO.read_text(encoding="utf-8")
 assert tpl.count("__DATA__") == 1, "template must contain exactly one __DATA__ token"
+assert tpl.count("__GEO__") == 1, "template must contain exactly one __GEO__ token"
+tpl = tpl.replace("__REPO__", REPO_URL)
 
 # ---- artifact build: fragment, data inlined ----------------------------
 (ROOT / "build").mkdir(exist_ok=True)
-single = tpl.replace("__DATA__", raw)
+single = tpl.replace("__DATA__", raw).replace("__GEO__", geo)
 (ROOT / "build" / "dashboard.html").write_text(single, encoding="utf-8", newline="\n")
 
 # ---- hosted build: full document, data in a sibling file ---------------
 docs = ROOT / "docs"
 docs.mkdir(exist_ok=True)
-body = tpl.replace("<script>\nconst D = __DATA__;",
-                   '<script src="data.js"></script>\n<script>\nconst D = window.__EAA_DATA__;')
-assert "__DATA__" not in body, "hosted splice failed"
+body = tpl.replace("<script>\nconst D = __DATA__;\nconst GEO = __GEO__;",
+                   '<script src="data.js"></script>\n<script>\n'
+                   'const D = window.__EAA_DATA__;\nconst GEO = window.__EAA_GEO__;')
+assert "__DATA__" not in body and "__GEO__" not in body, "hosted splice failed"
 
 # the template opens with its own <title>; the document head already carries one
 first_nl = body.index("\n") + 1
@@ -87,7 +92,9 @@ head_link, body = body[:link_end], body[link_end:]
 
 hosted = HEAD + head_link + "</head>\n<body>\n" + body + "\n</body>\n</html>\n"
 (docs / "index.html").write_text(hosted, encoding="utf-8", newline="\n")
-(docs / "data.js").write_text("window.__EAA_DATA__=" + raw + ";", encoding="utf-8", newline="\n")
+(docs / "data.js").write_text("window.__EAA_DATA__=" + raw + ";" + chr(10) +
+                              "window.__EAA_GEO__=" + geo + ";",
+                              encoding="utf-8", newline="\n")
 (docs / ".nojekyll").write_text("", encoding="utf-8")
 
 # GitHub Pages reads the custom domain from this file, so it must be part of
@@ -100,7 +107,8 @@ else:
 
 print(f"build/dashboard.html  {len(single)/1024:>5.0f} KB   (artifact fragment)")
 print(f"docs/index.html       {len(hosted)/1024:>5.0f} KB   (full document)")
-print(f"docs/data.js          {len(raw)/1024:>5.0f} KB")
+print(f"docs/data.js          {(len(raw) + len(geo))/1024:>5.0f} KB   "
+      f"(labels {len(raw)/1024:.0f} + outlines {len(geo)/1024:.0f})")
 print(f"public address        {SITE_URL}")
 
 # The privacy guarantee is a gate, not a promise in the readme. If anything

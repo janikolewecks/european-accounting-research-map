@@ -14,3 +14,8 @@ GH_REPO = "european-accounting-research-map"
 SITE_URL = (f"https://{DOMAIN}/" if DOMAIN
             else f"https://{GH_USER}.github.io/{GH_REPO}/")
 SITE_HOST = DOMAIN if DOMAIN else f"{GH_USER}.github.io"
+
+# The page links to its own source and licence. That is an outbound link
+# rather than a leak, so the audit tolerates this one host and no other.
+REPO_URL = f"https://github.com/{GH_USER}/{GH_REPO}"
+REPO_HOST = "github.com"
