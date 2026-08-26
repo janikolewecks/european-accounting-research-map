@@ -8,10 +8,10 @@ travel with the page.
 
 Source   Natural Earth, public domain (naturalearthdata.com), cached in
          src/vendor/ and not committed.
-Frames   europe  ETRS89 / LAEA (EPSG:3035), the standard European frame,
-                 for the country of the primary author
-         world   Equal Earth, an equal-area frame, for the country the
-                 evidence comes from, which is often outside Europe
+Frame    ETRS89 / LAEA (EPSG:3035), the standard European frame. The map is
+         European on purpose: evidence from outside Europe is reported as a
+         count under the map rather than drawn, because this is a map of
+         European accounting research and not a world atlas.
 
 Output   data/map_geo.json   {frame: {w, h, paths{code: d}, cent{code: [x,y]},
                                       area{code: px2}}}
@@ -128,8 +128,6 @@ if __name__ == "__main__":
     out = {
         "europe": frame("ne_50m.geojson", 3035, (-60, 20, 110, 84), 7000, 700,
                         focus=europe_codes, focus_window=(-26, 33, 46, 72)),
-        "world": frame("ne_110m.geojson", "+proj=eqearth", None, 38000, 900,
-                       drop_below=-56, prec=0),
     }
     OUT.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
     kb = OUT.stat().st_size / 1024

@@ -358,13 +358,6 @@ tbody tr:last-child { border-bottom:0; }
               <button data-mbasis="evidence" aria-pressed="false">Of the evidence</button>
             </div>
           </div>
-          <div class="fld" style="margin-bottom:10px">
-            <label for="m-frame">Frame</label>
-            <div class="seg" id="m-frame" role="group" aria-label="Frame">
-              <button data-mframe="europe" aria-pressed="true">Europe</button>
-              <button data-mframe="world" aria-pressed="false">World</button>
-            </div>
-          </div>
           <p class="pickhint" id="m-hint"></p>
         </div>
         <div>
@@ -505,7 +498,7 @@ const GEO = __GEO__;
 /* ---------------- state ---------------- */
 const S = { scope:'eu', group:'all', period:'all', view:'trends',
             tdim:'topics', tmode:'share', tsel:[],
-            mshow:'volume', mbasis:'author', mframe:'europe', mlabel:0,
+            mshow:'volume', mbasis:'author', mlabel:0,
             punit:'f:Nordic', pdim:'methods',
             xrow:'topics', xcol:'methods' };
 const SER = ['--s1','--s2','--s3','--s4','--s5'];
@@ -893,6 +886,10 @@ const DR = ['--d1','--d2','--d3','--d4','--d5','--d6','--d7'];
 const FAMS = [...new Set(D.countries.map(c => c.fam).filter(Boolean))].sort();
 const famColor = f => cssv(SER[FAMS.indexOf(f) % SER.length]);
 const countryOf = code => D.countries.find(x => x.code === code);
+// Two entries in the country list are not countries: a paper whose setting is
+// the Union as a whole, and one whose setting could not be identified. Neither
+// names a single country, which is exactly what the unmapped count means.
+const NONGEO = new Set(['EU', 'XX']);
 
 // The group filter selects countries, so the map honours it directly instead
 // of quietly ignoring what the reader set at the top of the page.
@@ -931,7 +928,7 @@ function rampLegend(max, sqrtScale, pct, tokens, diverging) {
 }
 
 function drawMap() {
-  const F = GEO[S.mframe];
+  const F = GEO.europe;
   const dim = mapDim(), I = dim ? dimInfo(dim) : null;
   const li = I ? Math.min(S.mlabel, I.names.length - 1) : 0;
   const idx = S.mbasis === 'evidence' ? 5 : 1;
@@ -942,7 +939,7 @@ function drawMap() {
   let unnamed = 0;
   for (const r of rows) {
     const k = r[idx];
-    if (k < 0) { unnamed++; continue; }
+    if (k < 0 || NONGEO.has(D.countries[k].code)) { unnamed++; continue; }
     const c = D.countries[k];
     let o = per.get(c.code);
     if (!o) per.set(c.code, o = { code:c.code, name:c.name, fam:c.fam, n:0, den:0, cnt:0 });
@@ -1063,8 +1060,10 @@ function drawMap() {
   Object.keys(F.cent).forEach(code => {
     if ((F.area[code] || 0) > dotBelow) return;
     const st = stateOf(code);
-    // a marker for an empty country is noise, especially on the world frame
-    if (st === 'ctx' || st === 'none') return;
+    // A marker says "this country is here and it is in the data". Drawing one
+    // for a country with nothing in it is just noise.
+    const o = per.get(code);
+    if (st === 'ctx' || !o || o.n === 0) return;
     const node = el('circle', { cx: F.cent[code][0], cy: F.cent[code][1], r: 4.2,
       class: 'shape', stroke: cssv('--ink'), 'stroke-width': 0.8 });
     paint(node, st);
@@ -1126,8 +1125,8 @@ function drawMap() {
   if (!family && offframe.length) {
     const top = offframe.slice(0, 3).map(o => o.name + ' ' + o.n.toLocaleString('en-US')).join(', ');
     const tot = offframe.reduce((a, o) => a + o.n, 0);
-    note.push(tot.toLocaleString('en-US') + ' fall outside this frame (' + top +
-      (offframe.length > 3 ? ', and others' : '') + '). Switch the frame to see them.');
+    note.push(tot.toLocaleString('en-US') + ' draw on evidence from outside Europe and are ' +
+      'not on the map: ' + top + (offframe.length > 3 ? ', and others' : '') + '.');
   }
   document.getElementById('m-note').textContent = note.join(' ');
 
@@ -1173,7 +1172,7 @@ function syncMap() {
       : 'Countries outside the group selected above are left unshaded.';
   document.getElementById('f-group-note').textContent =
     S.view === 'map' && S.mshow === 'family' ? '· not used here' : '';
-  setSeg('m-basis', 'mbasis'); setSeg('m-frame', 'mframe');
+  setSeg('m-basis', 'mbasis');
 }
 
 function buildFamilyList() {
@@ -1291,17 +1290,10 @@ document.getElementById('x-col').addEventListener('change', e => {
   S.xcol = e.target.value; syncCross('col'); drawCross(); });
 document.getElementById('m-show').addEventListener('change', e => {
   S.mshow = e.target.value;
-  // families are a property of countries, not of a frame or a basis
-  if (S.mshow === 'family') { S.mframe = 'europe'; }
   buildMapLabels(); syncMap(); drawMap(); });
 document.getElementById('m-label').addEventListener('change', e => {
   S.mlabel = +e.target.value; drawMap(); });
-seg('m-basis', 'mbasis', () => {
-  // evidence reaches well beyond Europe, so the frame follows the basis and
-  // stays visible in the control rather than changing behind the reader
-  S.mframe = S.mbasis === 'evidence' ? 'world' : 'europe';
-  syncMap(); drawMap(); });
-seg('m-frame', 'mframe', () => { syncMap(); drawMap(); });
+seg('m-basis', 'mbasis', () => { syncMap(); drawMap(); });
 
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(x =>

@@ -166,17 +166,19 @@ with sync_playwright() as p:
     dots = pg.eval_on_selector_all("#m-plot circle.shape", "e => e.length")
     ck("micro-states are drawn as markers", dots >= 2, f"got {dots}")
 
-    # evidence reaches beyond Europe, so the frame follows the basis
+    # The map is European on purpose, so evidence from elsewhere has to be
+    # reported in words rather than quietly dropped.
+    ck("there is no world frame to switch to",
+       pg.eval_on_selector_all("#m-frame", "e => e.length") == 0)
     pg.click('#m-basis button[data-mbasis="evidence"]'); pg.wait_for_timeout(450)
-    ck("evidence basis switches the frame to the world",
-       pg.eval_on_selector('#m-frame button[data-mframe="world"]',
-                           "e => e.getAttribute('aria-pressed')") == "true")
     note = pg.inner_text("#m-note")
-    ck("unmapped papers are declared", "no single country" in note, note[:80])
-    pg.click('#m-frame button[data-mframe="europe"]'); pg.wait_for_timeout(450)
-    note = pg.inner_text("#m-note")
-    ck("papers outside the frame are declared", "outside this frame" in note, note[:90])
-    ck("the largest outside evidence country is named", "United States" in note, note[:90])
+    ck("papers naming no country are declared", "no single country" in note, note[:90])
+    ck("papers with evidence outside Europe are declared",
+       "outside Europe" in note, note[:120])
+    ck("the largest of them is named", "United States" in note, note[:120])
+    ck("the union and the unknown are not passed off as countries",
+       " EU " not in note and " XX " not in note
+       and "EU" not in pg.inner_text("#m-table"), note[:120])
     pg.click('#m-basis button[data-mbasis="author"]'); pg.wait_for_timeout(400)
 
     # shares of a label are suppressed on a small base rather than drawn

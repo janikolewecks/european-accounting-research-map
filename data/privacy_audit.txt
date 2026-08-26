@@ -12,6 +12,6 @@ PASS  F topic reasoning: absent from every published file  --  7,487 values test
 PASS  F method reasoning: absent from every published file  --  7,503 values tested
 PASS  F evidence reasoning: absent from every published file  --  7,497 values tested
 PASS  G contact data: no e-mail, ORCID or unexpected host  --  font service, SVG namespace and the project repository
-PASS  H map geometry: country codes and coordinates only  --  238 outlines in 2 frames
+PASS  H map geometry: country codes and coordinates only  --  64 outlines in 1 frames
 
 ALL CHECKS PASSED

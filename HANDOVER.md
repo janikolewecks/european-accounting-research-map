@@ -74,9 +74,11 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
    Alles leitet sich davon ab: canonical, Social-Cards, CNAME und die
    Host-Freigabe der Datenschutzpruefung. Nirgends sonst haendisch setzen.
 6. **Kartengeometrie liegt in der Seite**, nicht bei einem Kartendienst.
-   Natural Earth (gemeinfrei), vereinfacht und projiziert, 83 KB. Europa in
-   EPSG:3035, die Evidenzansicht in Equal Earth, weil die groesste einzelne
-   Evidenzquelle die USA sind. Der Rahmen wird **im projizierten Raum**
+   Natural Earth (gemeinfrei), vereinfacht und projiziert, 50 KB, EPSG:3035.
+   **Nur Europa.** Eine Weltkarte war gebaut und wurde auf Wunsch wieder
+   entfernt; was ausserhalb Europas liegt, steht als Zahl unter der Karte.
+   `EU` und `XX` in der Laenderliste sind keine Laender und zaehlen zu den
+   Papieren ohne einzelnes Land. Der Rahmen wird **im projizierten Raum**
    zugeschnitten; ein Grad-Rechteck erzeugt sonst einen Russland-Keil.
    Malta, Luxemburg und Monaco werden als Punkte gezeichnet, sonst
    verschwinden sie. Zaehlungen werden wurzelskaliert, Anteile linear,

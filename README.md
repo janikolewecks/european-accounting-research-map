@@ -248,14 +248,22 @@ suggesting that a value was observed in between.
 
 **The map carries its own cartography rather than a tile service.** The
 outlines are simplified Natural Earth geometry, projected and inlined as SVG
-path data: 83 KB, no external request, nothing to keep alive. Europe uses
-ETRS89 / LAEA (EPSG:3035), the standard European frame; the evidence view
-uses Equal Earth, because the largest single source of evidence in the corpus
-is the United States. The frame is cut in projected space around the
-countries the corpus actually contains, since a rectangle in degrees becomes
-a wedge once projected and leaves a meaningless triangle of Russia in the
-corner. Countries too small to survive simplification, Malta, Luxembourg and
-Monaco, are drawn as markers so they cannot silently disappear.
+path data: 50 KB, no external request, nothing to keep alive. The projection
+is ETRS89 / LAEA (EPSG:3035), the standard European frame, and the frame is
+cut in projected space around the countries the corpus actually contains,
+since a rectangle in degrees becomes a wedge once projected and leaves a
+meaningless triangle of Russia in the corner. Countries too small to survive
+simplification, Malta, Luxembourg and Monaco, are drawn as markers so they
+cannot silently disappear.
+
+**The map stays European, and says what it leaves out.** A world frame was
+built and then dropped: this is a map of European accounting research, not a
+world atlas. That matters most in the evidence view, where a large part of
+the corpus looks outside Europe, so the count is reported in words under the
+map instead of being quietly omitted. Two entries in the country list are not
+countries at all, a Union-wide setting and an unidentified one; they are
+counted with the papers that name no single country rather than passed off as
+foreign states.
 
 **The map never colours a raw share.** A share map answers the wrong
 question twice over. Cyprus has 17 capital-markets papers out of 19, so as a
