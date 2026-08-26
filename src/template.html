@@ -18,7 +18,12 @@
   --s1:#225493; --s2:#c4622d; --s3:#009acc; --s4:#d89a00; --s5:#d4569a;
   --pos:#225493; --neg:#c1443c;
   --ctx:#eef1f5; --empty:#dcdfe3;
-  --q1:#e5edf7; --q2:#c8dcef; --q3:#a7c6e3; --q4:#82a9d3; --q5:#5787bd; --q6:#35659f; --q7:#1e4a80;
+  /* diverging ramp for "against the European average": red arm, neutral
+     middle, the same blue arm as the sequential ramp. Red against blue is
+     the pairing that survives red-green colour blindness. */
+  --d1:#8f3229; --d2:#bb5f55; --d3:#dfa79f; --d4:#d8dce1;
+  --d5:#a7c6e3; --d6:#5787bd; --d7:#1e4a80;
+  --q1:#d3e2f3; --q2:#b5cae5; --q3:#97b3d8; --q4:#789dca; --q5:#5787bd; --q6:#3c689e; --q7:#1e4a80;
   --qink1:#0e1116; --qink2:#ffffff;
 }
 @media (prefers-color-scheme: dark) {
@@ -31,7 +36,9 @@
     --s1:#4a86d0; --s2:#cf6a33; --s3:#1a9ec8; --s4:#bd8500; --s5:#d55f9f;
     --pos:#4a86d0; --neg:#d4625a;
     --ctx:#1d2126; --empty:#2a2f36;
-    --q1:#16304f; --q2:#1e4a80; --q3:#2b6099; --q4:#3a7ab8; --q5:#5896cf; --q6:#85b4e0; --q7:#b2cfee;
+    --d1:#e08a80; --d2:#c4635a; --d3:#8d443e; --d4:#333941;
+    --d5:#2b6099; --d6:#5896cf; --d7:#b2cfee;
+    --q1:#1b3c66; --q2:#2a517f; --q3:#396799; --q4:#487eb4; --q5:#5896cf; --q6:#88b2df; --q7:#b2cfee;
     --qink1:#f2f5f8; --qink2:#0e1116;
   }
 }
@@ -44,7 +51,9 @@
   --s1:#4a86d0; --s2:#cf6a33; --s3:#1a9ec8; --s4:#bd8500; --s5:#d55f9f;
   --pos:#4a86d0; --neg:#d4625a;
   --ctx:#1d2126; --empty:#2a2f36;
-  --q1:#16304f; --q2:#1e4a80; --q3:#2b6099; --q4:#3a7ab8; --q5:#5896cf; --q6:#85b4e0; --q7:#b2cfee;
+  --d1:#e08a80; --d2:#c4635a; --d3:#8d443e; --d4:#333941;
+  --d5:#2b6099; --d6:#5896cf; --d7:#b2cfee;
+  --q1:#1b3c66; --q2:#2a517f; --q3:#396799; --q4:#487eb4; --q5:#5896cf; --q6:#88b2df; --q7:#b2cfee;
   --qink1:#f2f5f8; --qink2:#0e1116;
 }
 * { box-sizing:border-box; }
@@ -190,6 +199,12 @@ tbody tr:last-child { border-bottom:0; }
 /* map: sized by its own frame rather than stretched to the column */
 #m-plot svg { display:block; width:auto; max-width:100%; max-height:560px; }
 .shape { stroke:var(--surface); stroke-width:0.7; }
+/* Colour cannot reliably separate "at the average", "no data" and "not in
+   this map" at low chroma, least of all for a colour-blind reader. So only
+   countries with something to show are filled; the rest are told apart by
+   form. */
+.shape.thin { fill:url(#m-hatch); }
+.shape.ctx { fill:none; stroke:var(--grid); stroke-width:0.6; pointer-events:all; }
 .shape:hover { stroke:var(--ink); stroke-width:1.3; }
 .legend span.ramp { gap:0; }
 .legend .ramp svg { display:block; }
@@ -327,9 +342,9 @@ tbody tr:last-child { border-bottom:0; }
             <select id="m-show">
               <option value="volume">Submissions</option>
               <option value="family">Accounting families</option>
-              <option value="topics">Share of one topic</option>
-              <option value="methods">Share of one method</option>
-              <option value="sources">Share of one data source</option>
+              <option value="topics">Topic, against Europe</option>
+              <option value="methods">Method, against Europe</option>
+              <option value="sources">Data source, against Europe</option>
             </select>
           </div>
           <div class="fld" style="margin-bottom:10px" id="m-label-fld" hidden>
@@ -869,10 +884,12 @@ function drawCross() {
 }
 
 /* ---------------- map ---------------- */
-// A country's share is meaningless on a handful of papers, so below this base
-// the country is marked as having too few rather than given a colour.
-const MINN = 10;
+// Below this base a share says more about the base than about the country:
+// with twenty papers a "country" is one or two research groups, and its share
+// swamps everything else on the map. Such countries are marked, not coloured.
+const MINN = 30;
 const QR = ['--q1','--q2','--q3','--q4','--q5','--q6','--q7'];
+const DR = ['--d1','--d2','--d3','--d4','--d5','--d6','--d7'];
 const FAMS = [...new Set(D.countries.map(c => c.fam).filter(Boolean))].sort();
 const famColor = f => cssv(SER[FAMS.indexOf(f) % SER.length]);
 const countryOf = code => D.countries.find(x => x.code === code);
@@ -895,14 +912,17 @@ function mapDim() {
   return ['topics','methods','sources'].includes(S.mshow) ? S.mshow : null;
 }
 
-function rampLegend(max, sqrtScale, pct) {
+function rampLegend(max, sqrtScale, pct, tokens, diverging) {
   const w = 210, sw = w / 7;
   const svg = el('svg', { viewBox: '0 0 ' + w + ' 28', width: w, height: 28,
     role: 'img', 'aria-label': 'colour scale' });
   for (let k = 0; k < 7; k++)
-    svg.appendChild(el('rect', { x: k * sw, y: 0, width: sw + 0.4, height: 10, fill: cssv(QR[k]) }));
-  const at = k => sqrtScale ? Math.pow(k / 7, 2) * max : k / 7 * max;
-  const lab = v => (pct ? fmt(v, v > 0 && v < 10 ? 1 : 0) + '%' : Math.round(v).toLocaleString('en-US'));
+    svg.appendChild(el('rect', { x: k * sw, y: 0, width: sw + 0.4, height: 10, fill: cssv(tokens[k]) }));
+  const at = k => diverging ? (k / 7 * 2 - 1) * max
+                : sqrtScale ? Math.pow(k / 7, 2) * max : k / 7 * max;
+  const lab = v => diverging ? (v > 0 ? '+' : '') + Math.round(v) + ' pp'
+                 : pct ? fmt(v, v > 0 && v < 10 ? 1 : 0) + '%'
+                 : Math.round(v).toLocaleString('en-US');
   [[0, 'start'], [3.5, 'middle'], [7, 'end']].forEach(pair =>
     svg.appendChild(txt(pair[0] * sw, 24, lab(at(pair[0])), {
       'text-anchor': pair[1], 'font-size': 10.5, fill: cssv('--muted'),
@@ -929,9 +949,23 @@ function drawMap() {
     o.n++;
     if (I && I.den(r)) { o.den++; if (I.has(r, li)) o.cnt++; }
   }
+  // A raw share is the wrong thing to colour: it makes a country of twenty
+  // papers the loudest thing on the map, while the countries that actually
+  // produce most of the research look pale because their output is spread
+  // over everything. What is worth seeing is the distance from the European
+  // average, on the same reference the profiles view uses.
+  let pE = 0;
+  if (I) {
+    let c = 0, n = 0;
+    for (const r of slice('all')) {
+      if (r[idx] >= 0 && I.den(r)) { n++; if (I.has(r, li)) c++; }
+    }
+    pE = n ? c / n * 100 : 0;
+  }
   per.forEach(o => {
     o.base = I ? o.den : o.n;
-    o.v = I ? (o.den < MINN ? null : o.cnt / o.den * 100) : o.n;
+    o.share = I && o.den ? o.cnt / o.den * 100 : 0;
+    o.v = I ? (o.den < MINN ? null : o.share - pE) : o.n;
   });
 
   const placed = c => !!(F.paths[c] || F.cent[c]);
@@ -939,11 +973,15 @@ function drawMap() {
                      .sort((a, b) => b.n - a.n);
 
   const vals = [...per.values()].filter(o => o.v !== null && placed(o.code)).map(o => o.v);
-  const sqrtScale = !I;              // counts are heavily skewed, shares are not
-  // the top of the ramp is the largest observed value, so the darkest
-  // step is actually used and the legend end label is a real country
-  const max = Math.max(0.001, ...(vals.length ? vals : [1]));
-  const bucket = v => Math.min(6, Math.floor((sqrtScale ? Math.sqrt(v / max) : v / max) * 7 * 0.999));
+  const sqrtScale = !I;              // counts are heavily skewed, differences are not
+  // Counts run to the largest observed value so the darkest step is a real
+  // country. Differences run symmetrically about zero, so that the neutral
+  // middle of the ramp always means "the same as Europe".
+  const max = I ? niceMax(Math.max(1, ...vals.map(Math.abs), 1))
+                : Math.max(0.001, ...(vals.length ? vals : [1]));
+  const bucket = I
+    ? v => Math.min(6, Math.max(0, Math.floor((v + max) / (2 * max) * 7 * 0.999)))
+    : v => Math.min(6, Math.floor(Math.sqrt(v / max) * 7 * 0.999));
 
   // In the evidence view every country on earth is eligible; in the author
   // view the population and group filters decide who belongs on the map.
@@ -956,12 +994,12 @@ function drawMap() {
   const defs = el('defs');
   const pat = el('pattern', { id:'m-hatch', width:6, height:6,
     patternUnits:'userSpaceOnUse', patternTransform:'rotate(45)' });
-  pat.appendChild(el('rect', { width:6, height:6, fill: cssv('--chip') }));
+  pat.appendChild(el('rect', { width:6, height:6, fill: 'transparent' }));
   pat.appendChild(el('line', { x1:0, y1:0, x2:0, y2:6,
     stroke: cssv('--axis'), 'stroke-width':1.6 }));
   defs.appendChild(pat); svg.appendChild(defs);
 
-  const used = { ctx:false, none:false, few:false, ramp:false };
+  const used = { ctx:false, thin:false, ramp:false };
   function stateOf(code) {
     if (!eligible(code)) return 'ctx';
     if (family) {
@@ -969,17 +1007,22 @@ function drawMap() {
       return c && c.fam ? 'f:' + c.fam : 'ctx';
     }
     const o = per.get(code);
-    if (!o || o.base === 0) return 'none';
-    if (o.v === null) return 'few';
+    // nothing at all and too little to compare are the same message
+    if (!o || o.base === 0 || o.v === null) return 'thin';
     return 'q' + bucket(o.v);
   }
   function fillOf(st) {
-    if (st === 'ctx') { used.ctx = true; return cssv('--ctx'); }
-    if (st === 'none') { used.none = true; return cssv('--empty'); }
-    if (st === 'few') { used.few = true; return 'url(#m-hatch)'; }
+    if (st === 'ctx') { used.ctx = true; return null; }
+    if (st === 'thin') { used.thin = true; return null; }
     if (st.startsWith('f:')) return famColor(st.slice(2));
-    used.ramp = true; return cssv(QR[+st.slice(1)]);
+    used.ramp = true; return cssv((I ? DR : QR)[+st.slice(1)]);
   }
+  // form states carry their own class; only data states carry a fill
+  const paint = (node, st) => {
+    const f = fillOf(st);
+    if (f) node.setAttribute('fill', f);
+    else node.setAttribute('class', 'shape ' + st);
+  };
 
   const host = document.getElementById('m-plot'), tip = document.getElementById('m-tip');
   function attach(node, code) {
@@ -995,9 +1038,11 @@ function drawMap() {
       else if (!o || o.base === 0) body = '<div class="tr">no submissions in view</div>';
       else if (o.v === null) body =
         '<div class="tr">Base<b class="mono">' + o.den + '</b></div>' +
-        '<div class="tr">too few for a share</div>';
+        '<div class="tr">too few for a comparison</div>';
       else body =
-        (I ? '<div class="tr">' + I.names[li] + '<b class="mono">' + fmt(o.v) + '%</b></div>' +
+        (I ? '<div class="tr">' + I.names[li] + '<b class="mono">' + fmt(o.share) + '%</b></div>' +
+             '<div class="tr">Europe<b class="mono">' + fmt(pE) + '%</b></div>' +
+             '<div class="tr">Difference<b class="mono">' + (o.v >= 0 ? '+' : '') + fmt(o.v) + ' pp</b></div>' +
              '<div class="tr">Base<b class="mono">' + o.den.toLocaleString('en-US') + '</b></div>'
            : '<div class="tr">Submissions<b class="mono">' + o.n.toLocaleString('en-US') + '</b></div>') +
         (o.fam ? '<div class="tr">Family<b>' + o.fam + '</b></div>' : '');
@@ -1008,7 +1053,8 @@ function drawMap() {
   }
 
   Object.keys(F.paths).forEach(code => {
-    const node = el('path', { d: F.paths[code], class: 'shape', fill: fillOf(stateOf(code)) });
+    const node = el('path', { d: F.paths[code], class: 'shape' });
+    paint(node, stateOf(code));
     svg.appendChild(node);
     attach(node, code);
   });
@@ -1020,7 +1066,8 @@ function drawMap() {
     // a marker for an empty country is noise, especially on the world frame
     if (st === 'ctx' || st === 'none') return;
     const node = el('circle', { cx: F.cent[code][0], cy: F.cent[code][1], r: 4.2,
-      class: 'shape', fill: fillOf(st), stroke: cssv('--ink'), 'stroke-width': 0.8 });
+      class: 'shape', stroke: cssv('--ink'), 'stroke-width': 0.8 });
+    paint(node, st);
     svg.appendChild(node);
     attach(node, code);
   });
@@ -1042,14 +1089,14 @@ function drawMap() {
   } else if (used.ramp) {
     const sp = document.createElement('span');
     sp.className = 'ramp';
-    sp.appendChild(rampLegend(max, sqrtScale, !!I));
+    sp.appendChild(rampLegend(max, sqrtScale, !!I, I ? DR : QR, !!I));
     lg.appendChild(sp);
   }
-  if (used.few) swatch('repeating-linear-gradient(45deg, ' + cssv('--chip') +
-    ' 0 2px, ' + cssv('--axis') + ' 2px 3px)', 'fewer than ' + MINN + ' submissions', true);
-  if (used.none) swatch(cssv('--empty'),
-    S.mbasis === 'evidence' && !family ? 'no paper examines it' : 'no submissions in view', true);
-  if (used.ctx) swatch(cssv('--ctx'),
+  if (used.thin) swatch('repeating-linear-gradient(45deg, transparent 0 2px, ' +
+    cssv('--axis') + ' 2px 3px)',
+    I ? 'fewer than ' + MINN + ' submissions'
+      : S.mbasis === 'evidence' ? 'no paper examines it' : 'no submissions in view', true);
+  if (used.ctx) swatch('transparent',
     family ? 'not in an accounting family'
     : S.group !== 'all' ? 'outside the current selection'
     : S.scope === 'eu' ? 'outside Europe' : 'outside the current selection', true);
@@ -1058,7 +1105,7 @@ function drawMap() {
   const side = S.mbasis === 'evidence' ? 'evidence country' : 'author country';
   document.getElementById('m-title').textContent =
     family ? 'Accounting families'
-    : I ? I.names[li] + ', by ' + side
+    : I ? I.names[li] + ', against the European average'
     : 'Submissions by ' + side;
   document.getElementById('m-sub').textContent =
     family
@@ -1067,7 +1114,9 @@ function drawMap() {
       : groupLabel() + ' · ' + periodLabel() + ' · each country is ' +
         (S.mbasis === 'evidence' ? 'the country the paper examines'
                                  : 'the country of the primary author') + ' · ' +
-        (I ? 'share of that country’s submissions carrying the label, linear scale'
+        (I ? 'percentage points above or below the European share of ' + fmt(pE) +
+             ' percent · shaded only from ' + MINN + ' submissions upward, because below that a ' +
+             'share describes a research group rather than a country'
            : 'count of submissions, square-root scale so the largest country does not flatten the rest');
 
   const note = [];
@@ -1082,16 +1131,23 @@ function drawMap() {
   }
   document.getElementById('m-note').textContent = note.join(' ');
 
+  // The table carries the raw share as well as the difference: the colour
+  // answers one question, and the reader may well be asking the other.
+  const rank = o => o.v === null ? -Infinity : o.v;
   const listed = [...per.values()]
     .filter(o => o.n > 0 && (family ? !!o.fam : eligible(o.code)))
-    .sort((a, b) => (b.v === null ? -1 : b.v) - (a.v === null ? -1 : a.v) || b.n - a.n);
+    .sort((a, b) => (rank(b) - rank(a)) || (b.n - a.n));
   document.getElementById('m-table').innerHTML =
     '<table><thead><tr><th>Country</th><th>Family</th><th>Submissions</th>' +
-    (I ? '<th>Base</th><th>' + I.names[li] + ' %</th>' : '') + '</tr></thead><tbody>' +
+    (I ? '<th>Base</th><th>' + I.names[li] + ' %</th><th>Europe %</th><th>Difference</th>' : '') +
+    '</tr></thead><tbody>' +
     listed.map(o => '<tr><td>' + o.name + '</td><td>' + (o.fam || '—') + '</td>' +
       '<td class="mono">' + o.n.toLocaleString('en-US') + '</td>' +
-      (I ? '<td class="mono">' + o.den + '</td><td class="mono">' +
-           (o.v === null ? 'too few' : fmt(o.v)) + '</td>' : '') +
+      (I ? '<td class="mono">' + o.den + '</td>' +
+           '<td class="mono">' + fmt(o.share) + '</td>' +
+           '<td class="mono">' + fmt(pE) + '</td>' +
+           '<td class="mono">' + (o.v === null ? 'too few'
+              : (o.v >= 0 ? '+' : '') + fmt(o.v)) + '</td>' : '') +
       '</tr>').join('') + '</tbody></table>';
 }
 

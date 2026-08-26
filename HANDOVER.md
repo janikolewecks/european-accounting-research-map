@@ -45,7 +45,7 @@ Periodenfilter greift; mobil kein Querscroll.
     python src/export_data.py   # liest den Korpus, schreibt data/
     python src/build_geo.py     # nur noetig, wenn sich die Laenderliste aendert
     python src/build.py         # baut docs/ und build/, faehrt die Pruefung
-    python src/test.py          # 59 Funktionstests (Playwright)
+    python src/test.py          # 64 Funktionstests (Playwright)
     python src/shot.py          # Screenshots hell/dunkel/mobil
     git add -A && git commit -m "..." && git push     # Pages deployt selbst
 
@@ -91,7 +91,23 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
    gecachten Datendatei, `GEO` fehlte, `drawMap` warf &#8212; und weil Profile
    und Kombinationen danach gezeichnet wurden, blieben **drei** Reiter leer.
    Beides nicht zurueckbauen. Bei Fehlern zuerst hart neu laden (Strg+F5).
-9. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
+9. **Die Karte faerbt NIE einen Rohanteil.** Zypern hat 17 von 19 Papieren in
+   Capital Markets und waere als Rohanteil das dunkelste Land Europas,
+   obwohl das bei der Groesse eine Arbeitsgruppe ist und keine Community.
+   Eine reine Anzahl ist kaum besser: log(Themenpapiere) korreliert mit
+   r = 0,90 mit log(Gesamtpapieren), ist also im Wesentlichen eine Karte der
+   Groesse des akademischen Marktes. Gefaerbt wird deshalb der **Abstand zum
+   europaeischen Durchschnitt in Prozentpunkten**, divergierende Skala,
+   neutrale Mitte = wie Europa, gleiche Referenz wie die Profilansicht.
+   Mindestbasis 30 Einreichungen, darunter schraffiert; die Tabelle zeigt den
+   Rohanteil weiterhin.
+10. **Drei Zustaende, drei Formen:** Flaeche = hat Daten, Schraffur = zu
+   wenig, Umriss = nicht Teil dieser Auswahl. Grund: `validate_palette.py`
+   zeigte, dass im Dunkelmodus "am Durchschnitt" und "keine Daten" **exakt
+   dieselbe Farbe** waren (dE 0,0). Farbe kann diese Bedeutungen bei geringer
+   Saettigung nicht tragen, erst recht nicht fuer farbfehlsichtige Leser.
+   `python src/validate_palette.py` laeuft in der Testsuite mit.
+11. **Datenschutz-Gate:** `src/audit_privacy.py` prueft alle ausgelieferten
    Dateien gegen 5.489 Autorennamen, 2.669 Affiliationen, 5.957
    Ko-Autoren-Eintraege, 7.458 Titel, Abstracts und vier LLM-Freitextfelder.
    `build.py` **loescht die Auslieferungsdateien**, wenn etwas durchrutscht.

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Functional checks on the built dashboard."""
+import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -182,12 +183,33 @@ with sync_playwright() as p:
     pg.select_option("#m-show", "topics"); pg.wait_for_timeout(450)
     ck("choosing a dimension reveals the label menu",
        pg.eval_on_selector("#m-label-fld", "e => !e.hidden"))
-    ck("share mode names the label in the heading",
+    ck("comparison mode names the label and the reference in the heading",
        pg.inner_text("#m-title") == pg.eval_on_selector("#m-label", "e => e.selectedOptions[0].text")
-       + ", by author country", pg.inner_text("#m-title"))
-    ck("share mode marks a thin base rather than colouring it",
-       "fewer than 10" in pg.inner_text("#m-legend") or
-       "too few" in pg.inner_text("#m-table"), pg.inner_text("#m-legend"))
+       + ", against the European average", pg.inner_text("#m-title"))
+    ck("comparison mode states the European reference",
+       "percentage points above or below" in pg.inner_text("#m-sub"), pg.inner_text("#m-sub")[:60])
+    ck("comparison mode marks a thin base rather than colouring it",
+       "fewer than 30" in pg.inner_text("#m-legend"), pg.inner_text("#m-legend"))
+
+    # --- a small country must not be able to dominate the map -------------
+    # Cyprus has 17 capital-markets papers out of 19. As a raw share that is
+    # the darkest cell on the map; as a country-level statement it is one
+    # research group. Below the base rule it is marked, not coloured.
+    pg.evaluate("""() => {
+        const i = D.topics.findIndex(t => t.indexOf('Capital Market') === 0);
+        S.mshow = 'topics'; S.mlabel = i; drawMap(); }""")
+    pg.wait_for_timeout(300)
+    thin = pg.evaluate("""() => {
+        const rows = [...document.querySelectorAll('#m-table tbody tr')]
+            .map(tr => [...tr.cells].map(c => c.textContent));
+        const cy = rows.find(r => r[0] === 'Cyprus');
+        return { cyprus: cy, hasFew: rows.some(r => r[r.length - 1] === 'too few') }; }""")
+    ck("a nineteen-paper country is not given a colour",
+       thin["cyprus"] is not None and thin["cyprus"][-1] == "too few", str(thin["cyprus"]))
+    ck("the table still reports its raw share",
+       thin["cyprus"] is not None and float(thin["cyprus"][4]) > 80, str(thin["cyprus"]))
+    ck("the scale is centred on the European average",
+       "0 pp" in pg.inner_text("#m-legend"), pg.inner_text("#m-legend")[:80])
 
     # the families view is a reference map and says so
     pg.select_option("#m-show", "family"); pg.wait_for_timeout(450)
@@ -248,6 +270,13 @@ hosted = (HERE.parent / "docs" / "index.html").read_text(encoding="utf-8")
 ck("the hosted page requests its data file with a version stamp",
    'src="data.js?v=' in hosted,
    hosted[hosted.find("data.js") - 20:hosted.find("data.js") + 20] if "data.js" in hosted else "no reference")
+
+# --- the palette claim is re-run, not trusted -----------------------------
+import subprocess
+pal = subprocess.run([sys.executable, str(HERE / "validate_palette.py")],
+                     capture_output=True, text=True)
+ck("the palette holds for normal vision and all three dichromacies",
+   pal.returncode == 0, pal.stdout.strip().splitlines()[-1] if pal.stdout else "no output")
 
 print(f"{checks - len(fails)}/{checks} checks passed")
 for f in fails:

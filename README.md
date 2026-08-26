@@ -18,8 +18,9 @@ profiles, and cross-tabulations.
               template.html          the page, with __DATA__ and __GEO__ placeholders
               build.py               splices both into the two output shapes
               audit_privacy.py       the gate build.py runs before publishing
+              validate_palette.py    colour-blindness check, run by test.py
               config.py              the site address, used by build and audit
-              test.py                59 functional checks (Playwright)
+              test.py                64 functional checks (Playwright)
               shot.py                screenshots, light and dark, desktop and mobile
               vendor/                cached Natural Earth source, not committed
     docs/     index.html, data.js,   >>> this is what GitHub Pages serves <<<
@@ -36,7 +37,7 @@ that touches it.
 
     python src/export_data.py     # re-reads the corpus, rewrites data/
     python src/build.py           # rebuilds docs/ and build/, runs the privacy gate
-    python src/test.py            # 59 checks should pass
+    python src/test.py            # 64 checks should pass
 
 The map outlines change only if the country list does:
 
@@ -231,8 +232,10 @@ mark and its site chrome) and cyan `#009acc` (its secondary accent) anchor
 the categorical slots and supply the sequential ramp for the heatmap. The
 remaining hues were chosen and stepped so the whole set clears the
 colour-vision gates in both light and dark mode, checked with a validator
-rather than by eye: worst adjacent CVD separation dE 19.4 light and 15.4
-dark, against a target of 8.
+rather than by eye. That validator is `src/validate_palette.py` and runs as
+part of the test suite: it simulates the three dichromacies, compares every
+pair the eye is actually asked to tell apart, and fails the suite if any
+falls under its target.
 
 **Five categorical slots, not six.** A sixth hue could not hold the gate in
 dark mode, so the label picker caps at five. Fewer, cleanly separated
@@ -254,12 +257,35 @@ a wedge once projected and leaves a meaningless triangle of Russia in the
 corner. Countries too small to survive simplification, Malta, Luxembourg and
 Monaco, are drawn as markers so they cannot silently disappear.
 
-**Counts and shares are shaded differently on the map.** Submission counts
-run on a square-root scale, because two countries would otherwise flatten
-the other thirty; shares run linear. The legend prints the actual break
-values in both cases, so the scale is never something the reader has to
-infer. A share on fewer than ten submissions is hatched rather than coloured:
-below that base a percentage says more about the base than about the country.
+**The map never colours a raw share.** A share map answers the wrong
+question twice over. Cyprus has 17 capital-markets papers out of 19, so as a
+raw share it is the darkest country in Europe, although at that size a
+"country" is one research group. Meanwhile the countries that actually
+produce most of the capital-markets research look pale, because their output
+is spread across everything. And a count map is barely better: the log of a
+country's papers on a topic correlates at r = 0.90 with the log of its total
+output, so it is mostly a map of how large a country's academic market is.
+What the map therefore colours is the distance from the European average in
+percentage points, on the same reference the profiles view uses, on a
+diverging scale whose neutral middle means "the same as Europe". Counts
+remain available as their own view, on a square-root scale so that two
+countries do not flatten the other thirty.
+
+**A country needs at least 30 submissions before it is shaded.** Below that
+the number describes a research group rather than a research community. Such
+countries are hatched, and the table still reports their raw share, so
+nothing is hidden. The rule costs 15 of 32 countries over all years and 15 of
+30 in the thinner early period; the alternative was letting nineteen papers
+set the darkest colour on the map.
+
+**Three states, three forms, so colour is not asked to carry meaning it
+cannot.** A country with data is filled; a country with too little is
+hatched; a country outside the current selection is an outline. This was not
+an aesthetic choice: `src/validate_palette.py` showed that in dark mode the
+neutral middle of the diverging ramp and the "no data" grey were the same
+colour, dE 0.0, and that in light mode four further pairs sat under dE 7. No
+arrangement of near-neutral fills separates those meanings for a
+colour-blind reader, so form carries them instead.
 
 **The data file is requested with its content hash.** The first deployment
 of the map paired a fresh page with a browser's cached copy of the previous
