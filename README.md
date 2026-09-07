@@ -276,8 +276,13 @@ output, so it is mostly a map of how large a country's academic market is.
 What the map therefore colours is the distance from the European average in
 percentage points, on the same reference the profiles view uses, on a
 diverging scale whose neutral middle means "the same as Europe". Counts
-remain available as their own view, on a square-root scale so that two
-countries do not flatten the other thirty.
+remain available as their own view, on a logarithmic scale, because the
+counts run from one paper to more than a thousand: on a linear or even a
+square-root scale every small country lands in the palest step and cannot be
+told apart from bare paper. That is not hypothetical. A co-author reported
+that Georgia had disappeared from the map although it is in the paper's
+country table; it was there all along, four papers deep in the palest tint,
+outlined in white against a white page.
 
 **A country needs at least 30 submissions before it is shaded.** Below that
 the number describes a research group rather than a research community. Such
@@ -285,6 +290,11 @@ countries are hatched, and the table still reports their raw share, so
 nothing is hidden. The rule costs 15 of 32 countries over all years and 15 of
 30 in the thinner early period; the alternative was letting nineteen papers
 set the darkest colour on the map.
+
+**Countries are outlined, not separated by white.** White borders erase a
+pale country: at the bottom of the ramp the fill sits close to the page, so
+without a boundary the country reads as background rather than as a country
+with little in it.
 
 **Three states, three forms, so colour is not asked to carry meaning it
 cannot.** A country with data is filled; a country with too little is

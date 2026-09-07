@@ -198,7 +198,7 @@ tbody tr:last-child { border-bottom:0; }
 .foot b { color:var(--ink-2); font-weight:500; }
 /* map: sized by its own frame rather than stretched to the column */
 #m-plot svg { display:block; width:auto; max-width:100%; max-height:560px; }
-.shape { stroke:var(--surface); stroke-width:0.7; }
+.shape { stroke:var(--axis); stroke-width:0.8; vector-effect:non-scaling-stroke; }
 /* Colour cannot reliably separate "at the average", "no data" and "not in
    this map" at low chroma, least of all for a colour-blind reader. So only
    countries with something to show are filled; the rest are told apart by
@@ -909,14 +909,14 @@ function mapDim() {
   return ['topics','methods','sources'].includes(S.mshow) ? S.mshow : null;
 }
 
-function rampLegend(max, sqrtScale, pct, tokens, diverging) {
+function rampLegend(max, logScale, pct, tokens, diverging) {
   const w = 210, sw = w / 7;
   const svg = el('svg', { viewBox: '0 0 ' + w + ' 28', width: w, height: 28,
     role: 'img', 'aria-label': 'colour scale' });
   for (let k = 0; k < 7; k++)
     svg.appendChild(el('rect', { x: k * sw, y: 0, width: sw + 0.4, height: 10, fill: cssv(tokens[k]) }));
   const at = k => diverging ? (k / 7 * 2 - 1) * max
-                : sqrtScale ? Math.pow(k / 7, 2) * max : k / 7 * max;
+                : logScale ? Math.pow(max, k / 7) : k / 7 * max;
   const lab = v => diverging ? (v > 0 ? '+' : '') + Math.round(v) + ' pp'
                  : pct ? fmt(v, v > 0 && v < 10 ? 1 : 0) + '%'
                  : Math.round(v).toLocaleString('en-US');
@@ -970,7 +970,10 @@ function drawMap() {
                      .sort((a, b) => b.n - a.n);
 
   const vals = [...per.values()].filter(o => o.v !== null && placed(o.code)).map(o => o.v);
-  const sqrtScale = !I;              // counts are heavily skewed, differences are not
+  // Counts run from one paper to more than a thousand. On a linear or even a
+  // square-root scale every small country lands in the palest step and cannot
+  // be told apart from the page; on a logarithmic one they separate.
+  const logScale = !I;
   // Counts run to the largest observed value so the darkest step is a real
   // country. Differences run symmetrically about zero, so that the neutral
   // middle of the ramp always means "the same as Europe".
@@ -978,7 +981,7 @@ function drawMap() {
                 : Math.max(0.001, ...(vals.length ? vals : [1]));
   const bucket = I
     ? v => Math.min(6, Math.max(0, Math.floor((v + max) / (2 * max) * 7 * 0.999)))
-    : v => Math.min(6, Math.floor(Math.sqrt(v / max) * 7 * 0.999));
+    : v => Math.min(6, Math.max(0, Math.floor(Math.log(v) / Math.log(max) * 7 * 0.999)));
 
   // In the evidence view every country on earth is eligible; in the author
   // view the population and group filters decide who belongs on the map.
@@ -1088,7 +1091,7 @@ function drawMap() {
   } else if (used.ramp) {
     const sp = document.createElement('span');
     sp.className = 'ramp';
-    sp.appendChild(rampLegend(max, sqrtScale, !!I, I ? DR : QR, !!I));
+    sp.appendChild(rampLegend(max, logScale, !!I, I ? DR : QR, !!I));
     lg.appendChild(sp);
   }
   if (used.thin) swatch('repeating-linear-gradient(45deg, transparent 0 2px, ' +
@@ -1116,7 +1119,8 @@ function drawMap() {
         (I ? 'percentage points above or below the European share of ' + fmt(pE) +
              ' percent · shaded only from ' + MINN + ' submissions upward, because below that a ' +
              'share describes a research group rather than a country'
-           : 'count of submissions, square-root scale so the largest country does not flatten the rest');
+           : 'count of submissions on a logarithmic scale, so that the largest country ' +
+             'does not flatten the rest');
 
   const note = [];
   if (!family && S.mbasis === 'evidence')

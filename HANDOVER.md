@@ -102,7 +102,12 @@ laeuft stabil. Chrome und Playwright sind installiert, `gh` nicht.
    europaeischen Durchschnitt in Prozentpunkten**, divergierende Skala,
    neutrale Mitte = wie Europa, gleiche Referenz wie die Profilansicht.
    Mindestbasis 30 Einreichungen, darunter schraffiert; die Tabelle zeigt den
-   Rohanteil weiterhin.
+   Rohanteil weiterhin. **Anzahlen laufen logarithmisch** und jedes Land hat
+   eine sichtbare Kontur: mit Wurzelskala und weissen Grenzen landeten alle
+   kleinen Laender im blassesten Schritt und waren vom Papier nicht zu
+   unterscheiden. Ein Koautor meldete, Georgien sei von der Karte
+   verschwunden, obwohl es in Tabelle A.1 steht &#8212; es war die ganze Zeit da,
+   vier Papiere tief im hellsten Ton.
 10. **Drei Zustaende, drei Formen:** Flaeche = hat Daten, Schraffur = zu
    wenig, Umriss = nicht Teil dieser Auswahl. Grund: `validate_palette.py`
    zeigte, dass im Dunkelmodus "am Durchschnitt" und "keine Daten" **exakt
